@@ -1,1091 +1,424 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { useInView } from 'react-intersection-observer';
 import { 
-  Beaker, Github, ExternalLink, Play, Code, Palette, Cpu, Brain, 
-  Wrench, Globe, Star, Filter, ArrowRight, Zap, Eye, Heart,
-  Calendar, User, Tag, Coffee, Lightbulb, Rocket, Target, Grid,
-  List, Search, ChevronDown, Copy, Download, Share2, BookOpen,
-  Users, GitBranch, Mail, Bell, Sparkles, MousePointer, Terminal,
-  Layers, Database, BarChart, Smartphone, Settings, Award, TrendingUp
+  Beaker, Palette, Zap, Code, Target, Brain, Sparkles, 
+  ArrowRight, ExternalLink, Github, Star, TrendingUp,
+  Users, Clock, Award, Filter, Search, Grid, List,
+  Play, Eye, Download, Share2, Heart, MessageSquare,
+  Lightbulb, Cpu, Activity, BarChart3, Layers, Settings
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
 interface Experiment {
-  id: number;
+  id: string;
   title: string;
   description: string;
   category: string;
   tags: string[];
-  preview: string;
-  demoUrl?: string;
-  githubUrl?: string;
-  featured?: boolean;
-  author: string;
-  date: string;
-  status: 'live' | 'beta' | 'concept';
-  likes: number;
-  stats?: {
-    aiUsed?: boolean;
-    gptBuilt?: boolean;
-    testsRun?: number;
-    contributors?: number;
+  icon: React.ComponentType<any>;
+  status: 'live' | 'beta' | 'coming-soon';
+  featured: boolean;
+  stats: {
+    views: number;
+    likes: number;
+    forks: number;
+    lastUpdated: string;
   };
+  techStack: string[];
+  difficulty: 'beginner' | 'intermediate' | 'advanced';
+  estimatedTime: string;
+  link: string;
+  demoUrl?: string;
+  sourceUrl?: string;
+  preview?: string;
+  aiPowered?: boolean;
 }
 
-interface BlogPost {
-  id: number;
-  title: string;
-  excerpt: string;
-  readTime: string;
-  date: string;
-  author: string;
-  tags: string[];
-  relatedExperiment?: number;
+interface Contributor {
+  id: string;
+  name: string;
+  avatar: string;
+  role: string;
+  contributions: number;
 }
 
 const Labs: React.FC = () => {
   const [selectedCategory, setSelectedCategory] = useState('All');
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
-  const [searchTerm, setSearchTerm] = useState('');
-  const [filteredExperiments, setFilteredExperiments] = useState<Experiment[]>([]);
-  const [isFilterSticky, setIsFilterSticky] = useState(false);
-  const [email, setEmail] = useState('');
-  const [subscribed, setSubscribed] = useState(false);
-  const [activePlaygroundTool, setActivePlaygroundTool] = useState('color-generator');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [sortBy, setSortBy] = useState<'newest' | 'popular' | 'trending'>('newest');
+  const [showFilters, setShowFilters] = useState(false);
+  const [selectedTags, setSelectedTags] = useState<string[]>([]);
 
   const experiments: Experiment[] = [
     {
-      id: 1,
-      title: "AI-Powered Color Palette Generator",
-      description: "Generate beautiful color schemes using machine learning algorithms trained on award-winning designs.",
-      category: "AI",
-      tags: ["Machine Learning", "Design", "Colors", "API", "React"],
-      preview: "https://images.pexels.com/photos/1509428/pexels-photo-1509428.jpeg?auto=compress&cs=tinysrgb&w=800",
-      demoUrl: "/labs/color-generator",
-      githubUrl: "#",
-      featured: true,
-      author: "Sarah Johnson",
-      date: "2024-03-15",
-      status: "live",
-      likes: 234,
-      stats: {
-        aiUsed: true,
-        gptBuilt: true,
-        testsRun: 1250,
-        contributors: 8
-      }
-    },
-    {
-      id: 2,
-      title: "Micro-Interaction Library",
-      description: "A collection of delightful micro-interactions built with Framer Motion and CSS animations.",
-      category: "UI/UX",
-      tags: ["Animations", "React", "Framer Motion", "Components", "GSAP"],
-      preview: "https://images.pexels.com/photos/1181467/pexels-photo-1181467.jpeg?auto=compress&cs=tinysrgb&w=800",
-      demoUrl: "/labs/animation-tester",
-      githubUrl: "#",
-      featured: true,
-      author: "Mike Chen",
-      date: "2024-03-10",
-      status: "live",
-      likes: 189,
-      stats: {
-        testsRun: 890,
-        contributors: 12
-      }
-    },
-    {
-      id: 3,
-      title: "Real-time Code Playground",
-      description: "Interactive code editor with live preview for HTML, CSS, and JavaScript experimentation.",
-      category: "Dev Tools",
-      tags: ["Code Editor", "Live Preview", "HTML", "CSS", "JavaScript", "CodeMirror"],
-      preview: "https://images.pexels.com/photos/3861969/pexels-photo-3861969.jpeg?auto=compress&cs=tinysrgb&w=800",
-      demoUrl: "/labs/code-playground",
-      githubUrl: "#",
-      author: "Alex Rodriguez",
-      date: "2024-03-05",
-      status: "live",
-      likes: 156,
-      stats: {
-        testsRun: 2340,
-        contributors: 6
-      }
-    },
-    {
-      id: 4,
-      title: "A/B Testing Laboratory",
-      description: "Interactive A/B testing tool for comparing different UI variations and measuring performance.",
-      category: "Analytics",
-      tags: ["A/B Testing", "Analytics", "Conversion", "UI Testing", "React"],
-      preview: "https://images.pexels.com/photos/1181263/pexels-photo-1181263.jpeg?auto=compress&cs=tinysrgb&w=800",
-      demoUrl: "/labs/ab-testing",
-      githubUrl: "#",
-      author: "Emily Davis",
-      date: "2024-02-28",
-      status: "live",
-      likes: 298,
-      stats: {
-        testsRun: 567,
-        contributors: 4
-      }
-    },
-    {
-      id: 5,
-      title: "Voice-Controlled UI",
-      description: "Experimental interface that responds to voice commands using Web Speech API.",
-      category: "AI",
-      tags: ["Voice Recognition", "Web Speech API", "Accessibility", "AI"],
-      preview: "https://images.pexels.com/photos/3861458/pexels-photo-3861458.jpeg?auto=compress&cs=tinysrgb&w=800",
-      demoUrl: "#",
-      githubUrl: "#",
-      author: "David Kim",
-      date: "2024-02-20",
-      status: "concept",
-      likes: 87,
-      stats: {
-        aiUsed: true,
-        contributors: 3
-      }
-    },
-    {
-      id: 6,
-      title: "CSS Grid Layout Generator",
-      description: "Visual tool for creating complex CSS Grid layouts with drag-and-drop interface.",
-      category: "Dev Tools",
-      tags: ["CSS Grid", "Layout", "Visual Editor", "Code Generation"],
-      preview: "https://images.pexels.com/photos/1181298/pexels-photo-1181298.jpeg?auto=compress&cs=tinysrgb&w=800",
-      demoUrl: "#",
-      githubUrl: "#",
-      author: "Lisa Wang",
-      date: "2024-02-15",
-      status: "live",
-      likes: 167,
-      stats: {
-        testsRun: 445,
-        contributors: 7
-      }
-    },
-    {
-      id: 7,
-      title: "3D Model Viewer",
-      description: "WebGL-based 3D model viewer with interactive controls and material editor.",
-      category: "UI/UX",
-      tags: ["Three.js", "WebGL", "3D", "Interactive", "Materials"],
-      preview: "https://images.pexels.com/photos/3861969/pexels-photo-3861969.jpeg?auto=compress&cs=tinysrgb&w=800",
-      demoUrl: "#",
-      githubUrl: "#",
-      author: "James Wilson",
-      date: "2024-02-10",
-      status: "beta",
-      likes: 203,
-      stats: {
-        testsRun: 123,
-        contributors: 5
-      }
-    },
-    {
-      id: 8,
-      title: "API Documentation Generator",
-      description: "Automatically generate beautiful API docs from OpenAPI specifications.",
-      category: "Dev Tools",
-      tags: ["API", "Documentation", "OpenAPI", "Swagger", "Auto-generation"],
-      preview: "https://images.pexels.com/photos/1181467/pexels-photo-1181467.jpeg?auto=compress&cs=tinysrgb&w=800",
-      demoUrl: "#",
-      githubUrl: "#",
-      author: "Maria Garcia",
-      date: "2024-02-05",
-      status: "live",
-      likes: 134,
-      stats: {
-        testsRun: 789,
-        contributors: 9
-      }
-    }
-  ];
-
-  const blogPosts: BlogPost[] = [
-    {
-      id: 1,
-      title: "Building Real-time Collaboration with WebSockets",
-      excerpt: "How we implemented WebSocket connections for seamless multi-user experiences in our code playground.",
-      readTime: "8 min read",
-      date: "March 15, 2024",
-      author: "Alex Rodriguez",
-      tags: ["WebSockets", "Real-time", "Collaboration"],
-      relatedExperiment: 3
-    },
-    {
-      id: 2,
-      title: "AI Color Theory in Practice",
-      excerpt: "The machine learning algorithms behind our intelligent color palette generator and design principles.",
-      readTime: "12 min read",
-      date: "March 10, 2024",
-      author: "Sarah Johnson",
-      tags: ["AI", "Machine Learning", "Color Theory"],
-      relatedExperiment: 1
-    },
-    {
-      id: 3,
-      title: "Performance Optimization for Interactive Animations",
-      excerpt: "Advanced strategies for building smooth 60fps animations in web applications.",
-      readTime: "6 min read",
-      date: "March 5, 2024",
-      author: "Mike Chen",
-      tags: ["Performance", "Animations", "Optimization"],
-      relatedExperiment: 2
-    }
-  ];
-
-  const categories = ['All', 'Featured', 'UI/UX', 'Animations', 'APIs', 'AI', 'Dev Tools', 'Analytics', 'Open Source'];
-
-  const playgroundTools = [
-    {
       id: 'color-generator',
-      name: 'Color Generator',
+      title: 'AI Color Palette Generator',
+      description: 'Generate beautiful, accessible color palettes using AI with real-time preview and collaboration features.',
+      category: 'AI',
+      tags: ['AI', 'Colors', 'Design', 'Accessibility', 'Collaboration'],
       icon: Palette,
-      description: 'AI-powered color palette creation'
+      status: 'live',
+      featured: true,
+      aiPowered: true,
+      stats: {
+        views: 15420,
+        likes: 892,
+        forks: 156,
+        lastUpdated: '2 days ago'
+      },
+      techStack: ['React', 'TypeScript', 'OpenAI', 'Tailwind'],
+      difficulty: 'intermediate',
+      estimatedTime: '15 min',
+      link: '/labs/color-generator',
+      demoUrl: '/labs/color-generator',
+      sourceUrl: 'https://github.com/pixeloria/color-generator',
+      preview: 'https://images.pexels.com/photos/1181671/pexels-photo-1181671.jpeg?auto=compress&cs=tinysrgb&w=800'
     },
     {
       id: 'animation-tester',
-      name: 'Animation Tester',
+      title: 'Animation Tester Pro',
+      description: 'Test and perfect UI animations with performance monitoring, accessibility audits, and code generation.',
+      category: 'Animations',
+      tags: ['Animations', 'Performance', 'Accessibility', 'Framer Motion'],
       icon: Zap,
-      description: 'Test micro-interactions and animations'
+      status: 'live',
+      featured: true,
+      stats: {
+        views: 12350,
+        likes: 743,
+        forks: 98,
+        lastUpdated: '1 week ago'
+      },
+      techStack: ['React', 'Framer Motion', 'GSAP', 'TypeScript'],
+      difficulty: 'advanced',
+      estimatedTime: '20 min',
+      link: '/labs/animation-tester',
+      demoUrl: '/labs/animation-tester',
+      sourceUrl: 'https://github.com/pixeloria/animation-tester'
     },
     {
-      id: 'code-editor',
-      name: 'Code Editor',
+      id: 'code-playground',
+      title: 'Live Code Playground',
+      description: 'Multi-file code editor with AI assistance, real-time collaboration, and instant preview across devices.',
+      category: 'Dev Tools',
+      tags: ['Code Editor', 'Collaboration', 'AI', 'Multi-file'],
       icon: Code,
-      description: 'Live HTML/CSS/JS playground'
+      status: 'live',
+      featured: true,
+      aiPowered: true,
+      stats: {
+        views: 18750,
+        likes: 1205,
+        forks: 234,
+        lastUpdated: '3 days ago'
+      },
+      techStack: ['React', 'Monaco Editor', 'WebSocket', 'Node.js'],
+      difficulty: 'advanced',
+      estimatedTime: '30 min',
+      link: '/labs/code-playground',
+      demoUrl: '/labs/code-playground',
+      sourceUrl: 'https://github.com/pixeloria/code-playground'
     },
     {
-      id: 'ab-tester',
-      name: 'A/B Tester',
-      icon: BarChart,
-      description: 'Compare UI variations'
+      id: 'ab-testing',
+      title: 'A/B Testing Simulator',
+      description: 'Advanced A/B testing platform with traffic simulation, heatmaps, and statistical analysis.',
+      category: 'Analytics',
+      tags: ['A/B Testing', 'Analytics', 'Statistics', 'Heatmaps'],
+      icon: Target,
+      status: 'live',
+      featured: true,
+      stats: {
+        views: 9840,
+        likes: 567,
+        forks: 89,
+        lastUpdated: '5 days ago'
+      },
+      techStack: ['React', 'D3.js', 'Statistics', 'TypeScript'],
+      difficulty: 'intermediate',
+      estimatedTime: '25 min',
+      link: '/labs/ab-testing',
+      demoUrl: '/labs/ab-testing',
+      sourceUrl: 'https://github.com/pixeloria/ab-testing'
+    },
+    {
+      id: 'neural-network-viz',
+      title: 'Neural Network Visualizer',
+      description: 'Interactive visualization of neural networks with real-time training and customizable architectures.',
+      category: 'AI',
+      tags: ['AI', 'Machine Learning', 'Visualization', 'Neural Networks'],
+      icon: Brain,
+      status: 'beta',
+      featured: false,
+      aiPowered: true,
+      stats: {
+        views: 7230,
+        likes: 445,
+        forks: 67,
+        lastUpdated: '1 week ago'
+      },
+      techStack: ['React', 'TensorFlow.js', 'D3.js', 'WebGL'],
+      difficulty: 'advanced',
+      estimatedTime: '45 min',
+      link: '/labs/neural-network-viz',
+      demoUrl: '/labs/neural-network-viz',
+      sourceUrl: 'https://github.com/pixeloria/neural-network-viz'
+    },
+    {
+      id: 'css-grid-generator',
+      title: 'CSS Grid Generator',
+      description: 'Visual CSS Grid layout generator with responsive breakpoints and export functionality.',
+      category: 'CSS',
+      tags: ['CSS', 'Grid', 'Layout', 'Responsive'],
+      icon: Grid,
+      status: 'live',
+      featured: false,
+      stats: {
+        views: 11200,
+        likes: 678,
+        forks: 123,
+        lastUpdated: '2 weeks ago'
+      },
+      techStack: ['React', 'CSS Grid', 'TypeScript'],
+      difficulty: 'beginner',
+      estimatedTime: '10 min',
+      link: '/labs/css-grid-generator',
+      demoUrl: '/labs/css-grid-generator',
+      sourceUrl: 'https://github.com/pixeloria/css-grid-generator'
+    },
+    {
+      id: 'performance-monitor',
+      title: 'Web Performance Monitor',
+      description: 'Real-time web performance monitoring with Core Web Vitals tracking and optimization suggestions.',
+      category: 'Performance',
+      tags: ['Performance', 'Core Web Vitals', 'Monitoring', 'Optimization'],
+      icon: Activity,
+      status: 'beta',
+      featured: false,
+      stats: {
+        views: 6890,
+        likes: 389,
+        forks: 45,
+        lastUpdated: '4 days ago'
+      },
+      techStack: ['React', 'Web APIs', 'Lighthouse', 'TypeScript'],
+      difficulty: 'intermediate',
+      estimatedTime: '20 min',
+      link: '/labs/performance-monitor',
+      demoUrl: '/labs/performance-monitor',
+      sourceUrl: 'https://github.com/pixeloria/performance-monitor'
+    },
+    {
+      id: 'component-library',
+      title: 'Interactive Component Library',
+      description: 'Comprehensive component library with live examples, props documentation, and code generation.',
+      category: 'UI/UX',
+      tags: ['Components', 'Documentation', 'Storybook', 'Design System'],
+      icon: Layers,
+      status: 'coming-soon',
+      featured: false,
+      stats: {
+        views: 0,
+        likes: 0,
+        forks: 0,
+        lastUpdated: 'Coming soon'
+      },
+      techStack: ['React', 'Storybook', 'TypeScript', 'Tailwind'],
+      difficulty: 'intermediate',
+      estimatedTime: '30 min',
+      link: '/labs/component-library',
+      demoUrl: '/labs/component-library',
+      sourceUrl: 'https://github.com/pixeloria/component-library'
     }
   ];
 
-  const contributors = [
-    { name: "Sarah J.", avatar: "https://images.pexels.com/photos/774909/pexels-photo-774909.jpeg?auto=compress&cs=tinysrgb&w=100", contributions: 23 },
-    { name: "Mike C.", avatar: "https://images.pexels.com/photos/220453/pexels-photo-220453.jpeg?auto=compress&cs=tinysrgb&w=100", contributions: 18 },
-    { name: "Alex R.", avatar: "https://images.pexels.com/photos/1043471/pexels-photo-1043471.jpeg?auto=compress&cs=tinysrgb&w=100", contributions: 15 },
-    { name: "Emily D.", avatar: "https://images.pexels.com/photos/415829/pexels-photo-415829.jpeg?auto=compress&cs=tinysrgb&w=100", contributions: 12 },
-    { name: "David K.", avatar: "https://images.pexels.com/photos/1040880/pexels-photo-1040880.jpeg?auto=compress&cs=tinysrgb&w=100", contributions: 9 }
+  const contributors: Contributor[] = [
+    {
+      id: '1',
+      name: 'Sarah Johnson',
+      avatar: 'https://images.pexels.com/photos/774909/pexels-photo-774909.jpeg?auto=compress&cs=tinysrgb&w=400',
+      role: 'Lead Developer',
+      contributions: 45
+    },
+    {
+      id: '2',
+      name: 'Mike Chen',
+      avatar: 'https://images.pexels.com/photos/220453/pexels-photo-220453.jpeg?auto=compress&cs=tinysrgb&w=400',
+      role: 'UI/UX Designer',
+      contributions: 32
+    },
+    {
+      id: '3',
+      name: 'Emily Rodriguez',
+      avatar: 'https://images.pexels.com/photos/415829/pexels-photo-415829.jpeg?auto=compress&cs=tinysrgb&w=400',
+      role: 'AI Specialist',
+      contributions: 28
+    },
+    {
+      id: '4',
+      name: 'David Kim',
+      avatar: 'https://images.pexels.com/photos/1043471/pexels-photo-1043471.jpeg?auto=compress&cs=tinysrgb&w=400',
+      role: 'Performance Expert',
+      contributions: 19
+    }
   ];
 
-  useEffect(() => {
-    let filtered = experiments;
-    
-    if (selectedCategory !== 'All') {
-      if (selectedCategory === 'Featured') {
-        filtered = experiments.filter(exp => exp.featured);
-      } else {
-        filtered = experiments.filter(exp => exp.category === selectedCategory);
-      }
-    }
-    
-    if (searchTerm) {
-      filtered = filtered.filter(exp => 
-        exp.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        exp.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        exp.tags.some(tag => tag.toLowerCase().includes(searchTerm.toLowerCase()))
-      );
-    }
-    
-    setFilteredExperiments(filtered);
-  }, [selectedCategory, searchTerm]);
+  const categories = ['All', ...new Set(experiments.map(exp => exp.category))];
+  const allTags = [...new Set(experiments.flatMap(exp => exp.tags))];
 
-  useEffect(() => {
-    const handleScroll = () => {
-      setIsFilterSticky(window.scrollY > 600);
-    };
+  const filteredExperiments = experiments.filter(exp => {
+    const matchesCategory = selectedCategory === 'All' || exp.category === selectedCategory;
+    const matchesSearch = exp.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                         exp.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                         exp.tags.some(tag => tag.toLowerCase().includes(searchQuery.toLowerCase()));
+    const matchesTags = selectedTags.length === 0 || selectedTags.some(tag => exp.tags.includes(tag));
+    
+    return matchesCategory && matchesSearch && matchesTags;
+  });
 
-    window.addEventListener('scroll', handleScroll);
-    return () => window.removeEventListener('scroll', handleScroll);
-  }, []);
+  const sortedExperiments = [...filteredExperiments].sort((a, b) => {
+    switch (sortBy) {
+      case 'popular':
+        return b.stats.likes - a.stats.likes;
+      case 'trending':
+        return b.stats.views - a.stats.views;
+      default:
+        return new Date(b.stats.lastUpdated).getTime() - new Date(a.stats.lastUpdated).getTime();
+    }
+  });
 
   const featuredExperiments = experiments.filter(exp => exp.featured);
 
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'live': return 'bg-green-100 text-green-800';
-      case 'beta': return 'bg-yellow-100 text-yellow-800';
-      case 'concept': return 'bg-purple-100 text-purple-800';
-      default: return 'bg-gray-100 text-gray-800';
-    }
-  };
-
-  const getStatusIcon = (status: string) => {
-    switch (status) {
-      case 'live': return <Zap size={12} />;
-      case 'beta': return <Eye size={12} />;
-      case 'concept': return <Lightbulb size={12} />;
-      default: return <Code size={12} />;
-    }
-  };
-
-  const handleSubscribe = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (email) {
-      setSubscribed(true);
-      setTimeout(() => {
-        setSubscribed(false);
-        setEmail('');
-      }, 3000);
-    }
+  const toggleTag = (tag: string) => {
+    setSelectedTags(prev => 
+      prev.includes(tag) 
+        ? prev.filter(t => t !== tag)
+        : [...prev, tag]
+    );
   };
 
   return (
-    <div className="min-h-screen bg-gray-900 overflow-hidden">
-      {/* SECTION 1: Hero Section */}
-      <section className="relative min-h-screen flex items-center overflow-hidden">
+    <div className="min-h-screen bg-gray-900">
+      {/* Hero Section */}
+      <section className="relative py-20 overflow-hidden">
+        <div className="absolute inset-0 bg-gradient-to-br from-blue-900/20 via-purple-900/20 to-pink-900/20"></div>
+        
         {/* Animated Background */}
         <div className="absolute inset-0">
-          <div className="absolute inset-0 bg-gradient-to-br from-blue-900/20 via-purple-900/20 to-pink-900/20"></div>
-          
-          {/* Morphing Gradient */}
-          <motion.div
-            className="absolute inset-0 bg-gradient-to-r from-blue-600/10 via-purple-600/10 to-pink-600/10"
-            animate={{
-              background: [
-                "linear-gradient(45deg, rgba(59, 130, 246, 0.1), rgba(147, 51, 234, 0.1), rgba(236, 72, 153, 0.1))",
-                "linear-gradient(135deg, rgba(236, 72, 153, 0.1), rgba(59, 130, 246, 0.1), rgba(147, 51, 234, 0.1))",
-                "linear-gradient(225deg, rgba(147, 51, 234, 0.1), rgba(236, 72, 153, 0.1), rgba(59, 130, 246, 0.1))",
-                "linear-gradient(315deg, rgba(59, 130, 246, 0.1), rgba(147, 51, 234, 0.1), rgba(236, 72, 153, 0.1))"
-              ]
-            }}
-            transition={{ duration: 8, repeat: Infinity, ease: "linear" }}
-          />
-
-          {/* Floating Lab Elements */}
-          <div className="absolute inset-0 overflow-hidden pointer-events-none">
-            {[...Array(15)].map((_, i) => (
-              <motion.div
-                key={i}
-                className="absolute"
-                animate={{
-                  x: [0, 100, 0],
-                  y: [0, -50, 0],
-                  rotate: [0, 180, 360],
-                  scale: [1, 1.2, 1]
-                }}
-                transition={{
-                  duration: 6 + i * 0.5,
-                  repeat: Infinity,
-                  delay: i * 0.3,
-                  ease: "easeInOut"
-                }}
-                style={{
-                  left: `${Math.random() * 100}%`,
-                  top: `${Math.random() * 100}%`
-                }}
-              >
-                {i % 4 === 0 && <Beaker className="w-6 h-6 text-blue-400/30" />}
-                {i % 4 === 1 && <Code className="w-5 h-5 text-purple-400/30" />}
-                {i % 4 === 2 && <Zap className="w-4 h-4 text-pink-400/30" />}
-                {i % 4 === 3 && <Cpu className="w-5 h-5 text-cyan-400/30" />}
-              </motion.div>
-            ))}
-          </div>
-
-          {/* Glowing Circuits */}
-          <svg className="absolute inset-0 w-full h-full opacity-10" viewBox="0 0 1000 1000">
-            <motion.path
-              d="M100,100 L200,100 L200,200 L300,200 L300,300 L400,300"
-              stroke="url(#circuit-gradient)"
-              strokeWidth="2"
-              fill="none"
-              initial={{ pathLength: 0 }}
-              animate={{ pathLength: 1 }}
-              transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
+          {[...Array(20)].map((_, i) => (
+            <motion.div
+              key={i}
+              className="absolute w-2 h-2 bg-blue-400/30 rounded-full"
+              animate={{
+                x: [0, 100, 0],
+                y: [0, -100, 0],
+                opacity: [0, 1, 0]
+              }}
+              transition={{
+                duration: 4 + i * 0.5,
+                repeat: Infinity,
+                delay: i * 0.2
+              }}
+              style={{
+                left: `${Math.random() * 100}%`,
+                top: `${Math.random() * 100}%`
+              }}
             />
-            <motion.path
-              d="M600,100 L700,100 L700,200 L800,200 L800,300 L900,300"
-              stroke="url(#circuit-gradient)"
-              strokeWidth="2"
-              fill="none"
-              initial={{ pathLength: 0 }}
-              animate={{ pathLength: 1 }}
-              transition={{ duration: 3, repeat: Infinity, delay: 1, ease: "easeInOut" }}
-            />
-            <defs>
-              <linearGradient id="circuit-gradient" x1="0%" y1="0%" x2="100%" y2="0%">
-                <stop offset="0%" stopColor="#3B82F6" />
-                <stop offset="50%" stopColor="#8B5CF6" />
-                <stop offset="100%" stopColor="#EC4899" />
-              </linearGradient>
-            </defs>
-          </svg>
+          ))}
         </div>
 
         <div className="container-custom relative z-10">
           <motion.div
-            initial={{ opacity: 0, y: 30 }}
+            initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8 }}
-            className="text-center max-w-5xl mx-auto"
+            transition={{ duration: 0.6 }}
+            className="text-center max-w-4xl mx-auto"
           >
-            {/* Lab Icon */}
-            <motion.div
-              initial={{ scale: 0, rotate: -180 }}
-              animate={{ scale: 1, rotate: 0 }}
-              transition={{ delay: 0.2, type: "spring", stiffness: 200 }}
-              className="inline-flex items-center justify-center w-24 h-24 rounded-full bg-gradient-to-br from-blue-500/20 to-purple-500/20 backdrop-blur-sm border border-white/10 mb-8"
-            >
-              <Beaker className="w-12 h-12 text-blue-400" />
-            </motion.div>
-            
-            {/* Animated Tagline */}
-            <motion.h1
-              className="text-6xl md:text-8xl font-bold mb-6"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ delay: 0.4 }}
-            >
-              <span className="bg-clip-text text-transparent bg-gradient-to-r from-blue-400 via-purple-400 to-pink-400">
-                Pixeloria
-              </span>
-              <br />
-              <motion.span
-                className="text-white"
-                initial={{ opacity: 0, x: -50 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ delay: 0.8, duration: 0.8 }}
+            <div className="flex items-center justify-center mb-6">
+              <motion.div
+                animate={{ rotate: 360 }}
+                transition={{ duration: 8, repeat: Infinity, ease: "linear" }}
+                className="w-16 h-16 rounded-full bg-gradient-to-r from-blue-500 to-purple-600 p-4 mr-4"
               >
-                Labs
-              </motion.span>
-            </motion.h1>
+                <Beaker className="w-full h-full text-white" />
+              </motion.div>
+              <h1 className="text-5xl md:text-6xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-400 via-purple-400 to-pink-400">
+                Pixeloria Labs
+              </h1>
+            </div>
             
-            {/* Typed Tagline Effect */}
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ delay: 1.2 }}
-              className="text-2xl md:text-3xl text-gray-300 mb-8 font-light"
-            >
-              <motion.span
-                initial={{ width: 0 }}
-                animate={{ width: "100%" }}
-                transition={{ delay: 1.5, duration: 2 }}
-                className="inline-block overflow-hidden whitespace-nowrap border-r-2 border-blue-400"
-              >
-                Inventing the Future, One Experiment at a Time
-              </motion.span>
-            </motion.div>
+            <p className="text-xl md:text-2xl text-gray-300 mb-8">
+              Inventing the Future, One Experiment at a Time
+            </p>
             
-            <motion.p
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ delay: 2, duration: 0.8 }}
-              className="text-gray-400 text-xl max-w-3xl mx-auto mb-12"
-            >
-              Welcome to our digital playground where we push boundaries, test new technologies, 
-              and create experimental projects that shape tomorrow's web experiences.
-            </motion.p>
+            <p className="text-lg text-gray-400 mb-12 max-w-2xl mx-auto">
+              Explore cutting-edge web technologies, AI-powered tools, and innovative experiments. 
+              Our lab is where creativity meets technology to push the boundaries of what's possible.
+            </p>
 
-            {/* Dual CTAs */}
-            <motion.div
-              initial={{ opacity: 0, y: 30 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 2.5, duration: 0.6 }}
-              className="flex flex-col sm:flex-row justify-center gap-6"
-            >
-              <motion.a
-                href="#experiments"
-                className="group relative overflow-hidden px-8 py-4 rounded-full bg-gradient-to-r from-blue-600 to-purple-600 text-white font-bold text-lg shadow-2xl"
+            <div className="flex flex-col sm:flex-row justify-center gap-4">
+              <motion.button
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
+                className="btn-primary group relative overflow-hidden"
               >
                 <span className="relative z-10 flex items-center">
-                  🔬 Explore Experiments
-                  <Rocket className="ml-2 group-hover:translate-x-1 transition-transform" size={20} />
+                  Explore Experiments
+                  <ArrowRight className="ml-2 group-hover:translate-x-1 transition-transform" size={20} />
                 </span>
-                <motion.div
-                  className="absolute inset-0 bg-gradient-to-r from-purple-600 to-pink-600"
-                  initial={{ x: "100%" }}
-                  whileHover={{ x: 0 }}
-                  transition={{ duration: 0.3 }}
-                />
-              </motion.a>
+                <div className="absolute inset-0 bg-gradient-to-r from-blue-600 to-purple-600 group-hover:scale-110 transition-transform duration-500"></div>
+              </motion.button>
               
-              <motion.div
+              <motion.button
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
+                className="btn-outline group"
               >
-                <Link
-                  to="/contact"
-                  className="group px-8 py-4 rounded-full border-2 border-white/20 text-white font-bold text-lg backdrop-blur-sm hover:bg-white/10 transition-all duration-300 inline-flex items-center"
-                >
-                  🤝 Collaborate With Us
-                  <Coffee className="ml-2 group-hover:translate-x-1 transition-transform" size={20} />
-                </Link>
-              </motion.div>
-            </motion.div>
+                <Github className="mr-2" size={20} />
+                View on GitHub
+                <ExternalLink className="ml-2 group-hover:translate-x-1 transition-transform" size={16} />
+              </motion.button>
+            </div>
           </motion.div>
-        </div>
-
-        {/* Mouse Trail Effect */}
-        <div className="absolute inset-0 pointer-events-none">
-          <motion.div
-            className="w-4 h-4 bg-blue-400/30 rounded-full blur-sm"
-            animate={{
-              x: [0, 100, 200, 100, 0],
-              y: [0, 50, 100, 150, 100]
-            }}
-            transition={{ duration: 10, repeat: Infinity, ease: "linear" }}
-          />
         </div>
       </section>
 
-      {/* SECTION 2: Filterable Experiments Grid */}
-      <section id="experiments" className="py-20 relative">
-        {/* Sticky Filter Bar */}
-        <motion.div
-          className={`transition-all duration-300 z-40 ${
-            isFilterSticky 
-              ? 'fixed top-0 left-0 right-0 bg-gray-900/95 backdrop-blur-md shadow-lg border-b border-gray-800' 
-              : 'relative'
-          }`}
-          initial={{ opacity: 0, y: -20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6 }}
-        >
-          <div className="container-custom py-6">
-            <div className="flex flex-col lg:flex-row items-center justify-between gap-4">
-              {/* Search Bar */}
-              <div className="relative flex-1 max-w-md">
-                <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />
-                <input
-                  type="text"
-                  placeholder="Search experiments..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="w-full pl-12 pr-4 py-3 bg-gray-800/50 backdrop-blur-sm border border-gray-700/50 rounded-xl text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                />
-              </div>
-
-              {/* Category Filters */}
-              <div className="flex flex-wrap gap-2">
-                {categories.map((category) => (
-                  <motion.button
-                    key={category}
-                    onClick={() => setSelectedCategory(category)}
-                    className={`px-4 py-2 rounded-full transition-all duration-300 ${
-                      selectedCategory === category
-                        ? 'bg-gradient-to-r from-blue-600 to-purple-600 text-white shadow-lg'
-                        : 'bg-gray-800/50 text-gray-300 hover:bg-gray-700/50 hover:text-white'
-                    }`}
-                    whileHover={{ scale: 1.05 }}
-                    whileTap={{ scale: 0.95 }}
-                  >
-                    {category === 'Featured' && <Star size={14} className="mr-1 inline" />}
-                    {category}
-                  </motion.button>
-                ))}
-              </div>
-
-              {/* View Toggle */}
-              <div className="flex items-center gap-2">
-                <button
-                  onClick={() => setViewMode('grid')}
-                  className={`p-2 rounded-lg transition-colors ${
-                    viewMode === 'grid' ? 'bg-blue-600 text-white' : 'text-gray-400 hover:text-white'
-                  }`}
-                >
-                  <Grid size={20} />
-                </button>
-                <button
-                  onClick={() => setViewMode('list')}
-                  className={`p-2 rounded-lg transition-colors ${
-                    viewMode === 'list' ? 'bg-blue-600 text-white' : 'text-gray-400 hover:text-white'
-                  }`}
-                >
-                  <List size={20} />
-                </button>
-              </div>
-            </div>
-          </div>
-        </motion.div>
-
+      {/* Stats Section */}
+      <section className="py-12 relative -mt-10 z-10">
         <div className="container-custom">
-          {/* Results Count */}
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            className="mb-8 text-center"
-          >
-            <p className="text-gray-400">
-              Showing {filteredExperiments.length} experiment{filteredExperiments.length !== 1 ? 's' : ''}
-              {searchTerm && ` for "${searchTerm}"`}
-            </p>
-          </motion.div>
-
-          {/* Experiments Grid/List */}
-          <AnimatePresence mode="wait">
-            <motion.div
-              key={`${viewMode}-${selectedCategory}-${searchTerm}`}
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              transition={{ duration: 0.3 }}
-              className={
-                viewMode === 'grid'
-                  ? 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8'
-                  : 'space-y-6'
-              }
-            >
-              {filteredExperiments.map((experiment, index) => (
-                <motion.div
-                  key={experiment.id}
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.5, delay: index * 0.1 }}
-                  className={`group relative ${
-                    viewMode === 'list' ? 'flex gap-6 items-center' : ''
-                  }`}
-                >
-                  <div className={`bg-gray-800/50 backdrop-blur-sm rounded-2xl overflow-hidden border border-gray-700/50 hover:border-gray-600/50 transition-all duration-300 hover:shadow-xl hover:shadow-blue-500/10 ${
-                    viewMode === 'list' ? 'flex-1 flex' : ''
-                  }`}>
-                    {/* Preview Image */}
-                    <div className={`relative overflow-hidden ${
-                      viewMode === 'list' ? 'w-48 h-32' : 'aspect-video'
-                    }`}>
-                      <img
-                        src={experiment.preview}
-                        alt={experiment.title}
-                        className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
-                      />
-                      
-                      {/* Overlay on Hover */}
-                      <div className="absolute inset-0 bg-gradient-to-t from-gray-900/80 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                        <div className="absolute bottom-4 left-4 right-4 flex gap-2">
-                          {experiment.demoUrl && (
-                            <Link
-                              to={experiment.demoUrl}
-                              className="flex-1 bg-white/20 backdrop-blur-sm text-white text-center py-2 rounded-lg hover:bg-white/30 transition-colors flex items-center justify-center text-sm"
-                            >
-                              <Play size={14} className="mr-1" />
-                              Demo
-                            </Link>
-                          )}
-                          {experiment.githubUrl && (
-                            <a
-                              href={experiment.githubUrl}
-                              className="flex-1 bg-white/20 backdrop-blur-sm text-white text-center py-2 rounded-lg hover:bg-white/30 transition-colors flex items-center justify-center text-sm"
-                            >
-                              <Github size={14} className="mr-1" />
-                              Code
-                            </a>
-                          )}
-                        </div>
-                      </div>
-
-                      {/* Status Badge */}
-                      <div className="absolute top-4 left-4">
-                        <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(experiment.status)}`}>
-                          {getStatusIcon(experiment.status)}
-                          <span className="ml-1 capitalize">{experiment.status}</span>
-                        </span>
-                      </div>
-
-                      {/* Featured Badge */}
-                      {experiment.featured && (
-                        <div className="absolute top-4 right-4">
-                          <span className="inline-flex items-center px-2 py-1 rounded-full bg-yellow-500/20 text-yellow-400 text-xs font-medium">
-                            <Star size={12} className="mr-1" />
-                            Featured
-                          </span>
-                        </div>
-                      )}
-                    </div>
-                    
-                    {/* Content */}
-                    <div className={`p-6 ${viewMode === 'list' ? 'flex-1' : ''}`}>
-                      <div className="flex items-center justify-between mb-2">
-                        <span className="text-blue-400 font-medium text-sm">{experiment.category}</span>
-                        <div className="flex items-center text-gray-400 text-sm">
-                          <Heart size={14} className="mr-1" />
-                          {experiment.likes}
-                        </div>
-                      </div>
-                      
-                      <h3 className="text-xl font-bold mb-2 text-white group-hover:text-blue-400 transition-colors">
-                        {experiment.title}
-                      </h3>
-                      
-                      <p className="text-gray-400 mb-4 text-sm">
-                        {experiment.description}
-                      </p>
-
-                      {/* Stats */}
-                      {experiment.stats && (
-                        <div className="flex flex-wrap gap-2 mb-4">
-                          {experiment.stats.aiUsed && (
-                            <span className="text-xs px-2 py-1 rounded-full bg-purple-500/10 text-purple-400 flex items-center">
-                              <Brain size={10} className="mr-1" />
-                              AI Used
-                            </span>
-                          )}
-                          {experiment.stats.gptBuilt && (
-                            <span className="text-xs px-2 py-1 rounded-full bg-green-500/10 text-green-400 flex items-center">
-                              <Sparkles size={10} className="mr-1" />
-                              GPT-4 Built
-                            </span>
-                          )}
-                          {experiment.stats.testsRun && (
-                            <span className="text-xs px-2 py-1 rounded-full bg-blue-500/10 text-blue-400 flex items-center">
-                              <BarChart size={10} className="mr-1" />
-                              {experiment.stats.testsRun}+ tests
-                            </span>
-                          )}
-                        </div>
-                      )}
-                      
-                      {/* Tags */}
-                      <div className="flex flex-wrap gap-1 mb-4">
-                        {experiment.tags.slice(0, viewMode === 'list' ? 5 : 3).map((tag, tagIndex) => (
-                          <span
-                            key={tagIndex}
-                            className="px-2 py-1 rounded-md bg-gray-700/50 text-gray-300 text-xs"
-                          >
-                            {tag}
-                          </span>
-                        ))}
-                        {experiment.tags.length > (viewMode === 'list' ? 5 : 3) && (
-                          <span className="px-2 py-1 rounded-md bg-gray-700/50 text-gray-300 text-xs">
-                            +{experiment.tags.length - (viewMode === 'list' ? 5 : 3)}
-                          </span>
-                        )}
-                      </div>
-                      
-                      {/* Author & Date */}
-                      <div className="flex items-center justify-between text-xs text-gray-500">
-                        <span className="flex items-center">
-                          <User size={12} className="mr-1" />
-                          {experiment.author}
-                        </span>
-                        <span className="flex items-center">
-                          <Calendar size={12} className="mr-1" />
-                          {new Date(experiment.date).toLocaleDateString()}
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-                </motion.div>
-              ))}
-            </motion.div>
-          </AnimatePresence>
-
-          {/* No Results */}
-          {filteredExperiments.length === 0 && (
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              className="text-center py-20"
-            >
-              <Beaker className="w-16 h-16 text-gray-600 mx-auto mb-4" />
-              <h3 className="text-xl font-semibold text-gray-400 mb-2">No experiments found</h3>
-              <p className="text-gray-500">Try adjusting your search or filter criteria</p>
-            </motion.div>
-          )}
-        </div>
-      </section>
-
-      {/* SECTION 3: Featured Experiment Block */}
-      {featuredExperiments.length > 0 && (
-        <section className="py-20 bg-gradient-to-b from-gray-800/50 to-gray-900/50">
-          <div className="container-custom">
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.6 }}
-              viewport={{ once: true }}
-              className="text-center mb-12"
-            >
-              <h2 className="text-4xl font-bold mb-4 bg-clip-text text-transparent bg-gradient-to-r from-blue-400 to-purple-400">
-                Featured Experiments
-              </h2>
-              <p className="text-gray-400 max-w-2xl mx-auto">
-                Our most impressive and latest projects showcasing cutting-edge technology
-              </p>
-            </motion.div>
-
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-              {featuredExperiments.slice(0, 2).map((experiment, index) => (
-                <motion.div
-                  key={experiment.id}
-                  initial={{ opacity: 0, y: 20 }}
-                  whileInView={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.6, delay: index * 0.2 }}
-                  viewport={{ once: true }}
-                  className="group relative"
-                >
-                  <div className="bg-gradient-to-br from-blue-900/20 to-purple-900/20 rounded-2xl overflow-hidden border border-blue-500/20 shadow-2xl">
-                    <div className="relative aspect-video overflow-hidden">
-                      <img
-                        src={experiment.preview}
-                        alt={experiment.title}
-                        className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
-                      />
-                      <div className="absolute inset-0 bg-gradient-to-t from-gray-900 via-transparent to-transparent"></div>
-                      
-                      {/* Floating Stats */}
-                      {experiment.stats && (
-                        <div className="absolute top-4 right-4 space-y-2">
-                          {experiment.stats.aiUsed && (
-                            <div className="bg-purple-500/20 backdrop-blur-sm text-purple-300 px-3 py-1 rounded-full text-xs font-medium">
-                              🧠 AI Powered
-                            </div>
-                          )}
-                          {experiment.stats.testsRun && (
-                            <div className="bg-blue-500/20 backdrop-blur-sm text-blue-300 px-3 py-1 rounded-full text-xs font-medium">
-                              📈 {experiment.stats.testsRun}+ Tests
-                            </div>
-                          )}
-                        </div>
-                      )}
-                    </div>
-                    
-                    <div className="p-8">
-                      <div className="flex items-center justify-between mb-4">
-                        <span className="text-blue-400 font-medium">{experiment.category}</span>
-                        <div className="flex items-center space-x-4 text-sm text-gray-400">
-                          <span className="flex items-center">
-                            <Heart size={14} className="mr-1" />
-                            {experiment.likes}
-                          </span>
-                          <span className="flex items-center">
-                            <Users size={14} className="mr-1" />
-                            {experiment.stats?.contributors || 0}
-                          </span>
-                        </div>
-                      </div>
-                      
-                      <h3 className="text-2xl font-bold mb-3 text-white group-hover:text-blue-400 transition-colors">
-                        {experiment.title}
-                      </h3>
-                      
-                      <p className="text-gray-300 mb-6">
-                        {experiment.description}
-                      </p>
-                      
-                      <div className="flex space-x-4">
-                        {experiment.demoUrl && (
-                          <Link
-                            to={experiment.demoUrl}
-                            className="flex-1 bg-gradient-to-r from-blue-600 to-purple-600 text-white py-3 rounded-lg hover:from-blue-700 hover:to-purple-700 transition-all font-semibold text-center flex items-center justify-center"
-                          >
-                            <Play size={16} className="mr-2" />
-                            See Live
-                          </Link>
-                        )}
-                        <button className="flex-1 border border-gray-600 text-white py-3 rounded-lg hover:bg-gray-700/50 transition-colors font-semibold">
-                          How It Was Built
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                </motion.div>
-              ))}
-            </div>
-          </div>
-        </section>
-      )}
-
-      {/* SECTION 4: Test Zone - Interactive Playground */}
-      <section className="py-20">
-        <div className="container-custom">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6 }}
-            viewport={{ once: true }}
-            className="text-center mb-12"
-          >
-            <h2 className="text-4xl font-bold mb-4 bg-clip-text text-transparent bg-gradient-to-r from-blue-400 to-purple-400">
-              Test Zone
-            </h2>
-            <p className="text-gray-400 max-w-2xl mx-auto">
-              Interactive playground where you can test our experimental tools and components live
-            </p>
-          </motion.div>
-
-          <div className="bg-gray-800/50 backdrop-blur-sm rounded-2xl border border-gray-700/50 overflow-hidden">
-            {/* Tool Tabs */}
-            <div className="flex border-b border-gray-700/50 overflow-x-auto">
-              {playgroundTools.map((tool) => (
-                <button
-                  key={tool.id}
-                  onClick={() => setActivePlaygroundTool(tool.id)}
-                  className={`flex items-center px-6 py-4 whitespace-nowrap transition-colors ${
-                    activePlaygroundTool === tool.id
-                      ? 'bg-blue-600/20 text-blue-400 border-b-2 border-blue-500'
-                      : 'text-gray-400 hover:text-white hover:bg-gray-700/30'
-                  }`}
-                >
-                  <tool.icon size={20} className="mr-2" />
-                  <div className="text-left">
-                    <div className="font-medium">{tool.name}</div>
-                    <div className="text-xs opacity-75">{tool.description}</div>
-                  </div>
-                </button>
-              ))}
-            </div>
-
-            {/* Tool Content */}
-            <div className="p-8">
-              <AnimatePresence mode="wait">
-                <motion.div
-                  key={activePlaygroundTool}
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -20 }}
-                  className="min-h-[400px] flex items-center justify-center"
-                >
-                  {activePlaygroundTool === 'color-generator' && (
-                    <div className="text-center">
-                      <Palette className="w-16 h-16 text-blue-400 mx-auto mb-4" />
-                      <h3 className="text-xl font-bold text-white mb-2">AI Color Generator</h3>
-                      <p className="text-gray-400 mb-6">Generate beautiful color palettes using machine learning</p>
-                      <Link
-                        to="/labs/color-generator"
-                        className="btn-primary inline-flex items-center"
-                      >
-                        <Sparkles size={16} className="mr-2" />
-                        Try Color Generator
-                      </Link>
-                    </div>
-                  )}
-                  
-                  {activePlaygroundTool === 'animation-tester' && (
-                    <div className="text-center">
-                      <Zap className="w-16 h-16 text-purple-400 mx-auto mb-4" />
-                      <h3 className="text-xl font-bold text-white mb-2">Animation Tester</h3>
-                      <p className="text-gray-400 mb-6">Test and preview micro-interactions and animations</p>
-                      <Link
-                        to="/labs/animation-tester"
-                        className="btn-primary inline-flex items-center"
-                      >
-                        <Play size={16} className="mr-2" />
-                        Try Animation Tester
-                      </Link>
-                    </div>
-                  )}
-                  
-                  {activePlaygroundTool === 'code-editor' && (
-                    <div className="text-center">
-                      <Code className="w-16 h-16 text-green-400 mx-auto mb-4" />
-                      <h3 className="text-xl font-bold text-white mb-2">Live Code Editor</h3>
-                      <p className="text-gray-400 mb-6">Interactive HTML, CSS, and JavaScript playground</p>
-                      <Link
-                        to="/labs/code-playground"
-                        className="btn-primary inline-flex items-center"
-                      >
-                        <Terminal size={16} className="mr-2" />
-                        Try Code Editor
-                      </Link>
-                    </div>
-                  )}
-                  
-                  {activePlaygroundTool === 'ab-tester' && (
-                    <div className="text-center">
-                      <BarChart className="w-16 h-16 text-orange-400 mx-auto mb-4" />
-                      <h3 className="text-xl font-bold text-white mb-2">A/B Testing Lab</h3>
-                      <p className="text-gray-400 mb-6">Compare UI variations and measure performance</p>
-                      <Link
-                        to="/labs/ab-testing"
-                        className="btn-primary inline-flex items-center"
-                      >
-                        <Target size={16} className="mr-2" />
-                        Try A/B Tester
-                      </Link>
-                    </div>
-                  )}
-                </motion.div>
-              </AnimatePresence>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* SECTION 5: Behind the Build - Blog-style Writeups */}
-      <section className="py-20 bg-gradient-to-b from-gray-800/50 to-gray-900/50">
-        <div className="container-custom">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6 }}
-            viewport={{ once: true }}
-            className="text-center mb-12"
-          >
-            <h2 className="text-4xl font-bold mb-4 bg-clip-text text-transparent bg-gradient-to-r from-blue-400 to-purple-400">
-              Behind the Build
-            </h2>
-            <p className="text-gray-400 max-w-2xl mx-auto">
-              Deep dive into our development process with detailed writeups and technical insights
-            </p>
-          </motion.div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {blogPosts.map((post, index) => (
-              <motion.article
-                key={post.id}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
+            {[
+              { number: experiments.length, label: "Active Experiments", icon: Beaker },
+              { number: experiments.reduce((sum, exp) => sum + exp.stats.views, 0), label: "Total Views", icon: Eye },
+              { number: contributors.length, label: "Contributors", icon: Users },
+              { number: experiments.reduce((sum, exp) => sum + exp.stats.likes, 0), label: "Community Likes", icon: Heart }
+            ].map((stat, index) => (
+              <motion.div
+                key={index}
                 initial={{ opacity: 0, y: 20 }}
                 whileInView={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.5, delay: index * 0.1 }}
                 viewport={{ once: true }}
-                className="group bg-gray-800/30 backdrop-blur-sm rounded-xl p-6 border border-gray-700/50 hover:border-gray-600/50 transition-all duration-300 cursor-pointer"
+                className="bg-gray-800/50 backdrop-blur-sm rounded-xl p-6 text-center border border-gray-700/50"
               >
-                <div className="flex items-center justify-between mb-4">
-                  <span className="text-xs text-blue-400 font-medium">Deep Dive</span>
-                  <span className="text-xs text-gray-500">{post.readTime}</span>
-                </div>
-                
-                <h3 className="text-lg font-bold mb-3 text-white group-hover:text-blue-400 transition-colors">
-                  {post.title}
-                </h3>
-                
-                <p className="text-gray-400 mb-4 text-sm">
-                  {post.excerpt}
-                </p>
-                
-                <div className="flex flex-wrap gap-2 mb-4">
-                  {post.tags.map((tag, tagIndex) => (
-                    <span
-                      key={tagIndex}
-                      className="px-2 py-1 rounded-md bg-gray-700/50 text-gray-300 text-xs"
-                    >
-                      {tag}
-                    </span>
-                  ))}
-                </div>
-                
-                <div className="flex items-center justify-between text-xs text-gray-500">
-                  <span className="flex items-center">
-                    <User size={12} className="mr-1" />
-                    {post.author}
-                  </span>
-                  <span>{post.date}</span>
-                </div>
-                
-                {post.relatedExperiment && (
-                  <div className="mt-4 pt-4 border-t border-gray-700/50">
-                    <button className="text-xs text-blue-400 hover:text-blue-300 flex items-center">
-                      <ExternalLink size={12} className="mr-1" />
-                      View Related Experiment
-                    </button>
-                  </div>
-                )}
-              </motion.article>
+                <stat.icon className="w-8 h-8 text-blue-400 mx-auto mb-3" />
+                <motion.h3 
+                  className="text-3xl font-bold mb-2 bg-clip-text text-transparent bg-gradient-to-r from-blue-400 to-purple-400"
+                  initial={{ scale: 0.5 }}
+                  whileInView={{ scale: 1 }}
+                  transition={{ duration: 0.5, delay: index * 0.1 }}
+                >
+                  {stat.number.toLocaleString()}
+                </motion.h3>
+                <p className="text-gray-400">{stat.label}</p>
+              </motion.div>
             ))}
           </div>
         </div>
       </section>
 
-      {/* SECTION 6: Collaborate With Us */}
+      {/* Featured Experiments */}
       <section className="py-20">
         <div className="container-custom">
           <motion.div
@@ -1093,242 +426,492 @@ const Labs: React.FC = () => {
             whileInView={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6 }}
             viewport={{ once: true }}
-            className="text-center mb-12"
+            className="text-center mb-16"
           >
             <h2 className="text-4xl font-bold mb-4 bg-clip-text text-transparent bg-gradient-to-r from-blue-400 to-purple-400">
-              Collaborate With Us
+              Featured Experiments
             </h2>
-            <p className="text-gray-400 max-w-2xl mx-auto">
-              Join our community of developers and designers building the future of web
+            <p className="text-gray-400 text-lg max-w-2xl mx-auto">
+              Our most innovative and popular experiments showcasing the latest in web technology
             </p>
           </motion.div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-            {/* Pitch Your Idea */}
-            <motion.div
-              initial={{ opacity: 0, x: -20 }}
-              whileInView={{ opacity: 1, x: 0 }}
-              transition={{ duration: 0.6 }}
-              viewport={{ once: true }}
-              className="bg-gradient-to-br from-blue-900/20 to-purple-900/20 rounded-2xl p-8 border border-blue-500/20"
-            >
-              <Lightbulb className="w-12 h-12 text-blue-400 mb-6" />
-              <h3 className="text-2xl font-bold text-white mb-4">Pitch Your Idea</h3>
-              <p className="text-gray-300 mb-6">
-                Have an experimental idea? Share it with us and let's build it together.
-              </p>
-              <form className="space-y-4">
-                <input
-                  type="text"
-                  placeholder="Your name"
-                  className="w-full px-4 py-3 bg-gray-800/50 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                />
-                <input
-                  type="email"
-                  placeholder="Your email"
-                  className="w-full px-4 py-3 bg-gray-800/50 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                />
-                <textarea
-                  placeholder="Describe your idea..."
-                  rows={4}
-                  className="w-full px-4 py-3 bg-gray-800/50 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                />
-                <button className="w-full bg-gradient-to-r from-blue-600 to-purple-600 text-white py-3 rounded-lg hover:from-blue-700 hover:to-purple-700 transition-all font-semibold">
-                  Submit Idea
-                </button>
-              </form>
-            </motion.div>
-
-            {/* GitHub Integration */}
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.6, delay: 0.2 }}
-              viewport={{ once: true }}
-              className="bg-gray-800/30 backdrop-blur-sm rounded-2xl p-8 border border-gray-700/50"
-            >
-              <Github className="w-12 h-12 text-gray-300 mb-6" />
-              <h3 className="text-2xl font-bold text-white mb-4">View on GitHub</h3>
-              <p className="text-gray-300 mb-6">
-                Explore our open-source experiments and contribute to the codebase.
-              </p>
-              
-              <div className="space-y-4 mb-6">
-                <div className="flex items-center justify-between p-3 bg-gray-700/30 rounded-lg">
-                  <span className="text-white font-medium">pixeloria/color-generator</span>
-                  <GitBranch className="w-4 h-4 text-gray-400" />
-                </div>
-                <div className="flex items-center justify-between p-3 bg-gray-700/30 rounded-lg">
-                  <span className="text-white font-medium">pixeloria/animation-lib</span>
-                  <GitBranch className="w-4 h-4 text-gray-400" />
-                </div>
-                <div className="flex items-center justify-between p-3 bg-gray-700/30 rounded-lg">
-                  <span className="text-white font-medium">pixeloria/code-playground</span>
-                  <GitBranch className="w-4 h-4 text-gray-400" />
-                </div>
-              </div>
-              
-              <a
-                href="https://github.com/pixeloria"
-                className="w-full bg-gray-700 text-white py-3 rounded-lg hover:bg-gray-600 transition-colors font-semibold text-center block"
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+            {featuredExperiments.map((experiment, index) => (
+              <motion.div
+                key={experiment.id}
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.5, delay: index * 0.1 }}
+                viewport={{ once: true }}
+                className="group relative"
               >
-                View All Repositories
-              </a>
-            </motion.div>
-
-            {/* Contributors Wall */}
-            <motion.div
-              initial={{ opacity: 0, x: 20 }}
-              whileInView={{ opacity: 1, x: 0 }}
-              transition={{ duration: 0.6, delay: 0.4 }}
-              viewport={{ once: true }}
-              className="bg-gray-800/30 backdrop-blur-sm rounded-2xl p-8 border border-gray-700/50"
-            >
-              <Users className="w-12 h-12 text-green-400 mb-6" />
-              <h3 className="text-2xl font-bold text-white mb-4">Contributors Wall</h3>
-              <p className="text-gray-300 mb-6">
-                Amazing people who help make our experiments possible.
-              </p>
-              
-              <div className="space-y-3 mb-6">
-                {contributors.map((contributor, index) => (
-                  <div key={index} className="flex items-center justify-between">
-                    <div className="flex items-center space-x-3">
-                      <img
-                        src={contributor.avatar}
-                        alt={contributor.name}
-                        className="w-8 h-8 rounded-full"
-                      />
-                      <span className="text-white font-medium">{contributor.name}</span>
-                    </div>
-                    <span className="text-green-400 text-sm">{contributor.contributions} commits</span>
+                <motion.div
+                  className="bg-gray-800/50 backdrop-blur-sm rounded-2xl border border-gray-700/50 overflow-hidden hover:border-blue-500/50 transition-all duration-500 hover:shadow-2xl hover:shadow-blue-500/10"
+                  whileHover={{ y: -10, scale: 1.02 }}
+                >
+                  {/* Status Badge */}
+                  <div className="absolute top-4 right-4 z-10">
+                    <span className={`px-3 py-1 rounded-full text-xs font-medium ${
+                      experiment.status === 'live' ? 'bg-green-500/20 text-green-400' :
+                      experiment.status === 'beta' ? 'bg-yellow-500/20 text-yellow-400' :
+                      'bg-gray-500/20 text-gray-400'
+                    }`}>
+                      {experiment.status.replace('-', ' ').toUpperCase()}
+                    </span>
                   </div>
-                ))}
-              </div>
-              
-              <Link
-                to="/contact"
-                className="w-full bg-green-600 text-white py-3 rounded-lg hover:bg-green-700 transition-colors font-semibold text-center block"
-              >
-                Join Our Team
-              </Link>
-            </motion.div>
+
+                  {/* AI Badge */}
+                  {experiment.aiPowered && (
+                    <div className="absolute top-4 left-4 z-10">
+                      <span className="px-3 py-1 rounded-full text-xs font-medium bg-purple-500/20 text-purple-400 flex items-center">
+                        <Brain size={12} className="mr-1" />
+                        AI Powered
+                      </span>
+                    </div>
+                  )}
+
+                  {/* Preview Image */}
+                  {experiment.preview && (
+                    <div className="aspect-video overflow-hidden">
+                      <img
+                        src={experiment.preview}
+                        alt={experiment.title}
+                        className="w-full h-full object-cover transform group-hover:scale-110 transition-transform duration-700"
+                      />
+                      <div className="absolute inset-0 bg-gradient-to-t from-gray-900 via-transparent to-transparent opacity-60"></div>
+                    </div>
+                  )}
+
+                  <div className="p-8">
+                    {/* Icon and Title */}
+                    <div className="flex items-center mb-4">
+                      <motion.div 
+                        className="w-12 h-12 rounded-xl bg-gradient-to-br from-blue-500 to-purple-600 p-3 mr-4"
+                        whileHover={{ rotate: 360, scale: 1.1 }}
+                        transition={{ duration: 0.6 }}
+                      >
+                        <experiment.icon className="w-full h-full text-white" />
+                      </motion.div>
+                      <div>
+                        <h3 className="text-xl font-bold text-white group-hover:text-blue-400 transition-colors">
+                          {experiment.title}
+                        </h3>
+                        <span className="text-sm text-gray-400">{experiment.category}</span>
+                      </div>
+                    </div>
+
+                    <p className="text-gray-400 mb-6 line-clamp-3">
+                      {experiment.description}
+                    </p>
+
+                    {/* Tags */}
+                    <div className="flex flex-wrap gap-2 mb-6">
+                      {experiment.tags.slice(0, 3).map((tag) => (
+                        <span
+                          key={tag}
+                          className="text-xs px-2 py-1 rounded-full bg-blue-500/10 text-blue-400"
+                        >
+                          {tag}
+                        </span>
+                      ))}
+                      {experiment.tags.length > 3 && (
+                        <span className="text-xs px-2 py-1 rounded-full bg-gray-700 text-gray-300">
+                          +{experiment.tags.length - 3}
+                        </span>
+                      )}
+                    </div>
+
+                    {/* Stats */}
+                    <div className="flex items-center justify-between mb-6 text-sm text-gray-400">
+                      <div className="flex items-center space-x-4">
+                        <span className="flex items-center">
+                          <Eye size={14} className="mr-1" />
+                          {experiment.stats.views.toLocaleString()}
+                        </span>
+                        <span className="flex items-center">
+                          <Heart size={14} className="mr-1" />
+                          {experiment.stats.likes}
+                        </span>
+                        <span className="flex items-center">
+                          <Star size={14} className="mr-1" />
+                          {experiment.stats.forks}
+                        </span>
+                      </div>
+                      <span>{experiment.stats.lastUpdated}</span>
+                    </div>
+
+                    {/* Actions */}
+                    <div className="flex space-x-3">
+                      <Link
+                        to={experiment.link}
+                        className="flex-1 bg-gradient-to-r from-blue-600 to-purple-600 text-white py-3 px-4 rounded-lg hover:from-blue-700 hover:to-purple-700 transition-all duration-300 font-semibold text-center flex items-center justify-center group/btn"
+                      >
+                        <Play size={16} className="mr-2" />
+                        Try It Live
+                        <ArrowRight size={16} className="ml-2 group-hover/btn:translate-x-1 transition-transform" />
+                      </Link>
+                      
+                      {experiment.sourceUrl && (
+                        <a
+                          href={experiment.sourceUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="p-3 bg-gray-700 text-white rounded-lg hover:bg-gray-600 transition-colors"
+                        >
+                          <Github size={16} />
+                        </a>
+                      )}
+                    </div>
+                  </div>
+                </motion.div>
+              </motion.div>
+            ))}
           </div>
         </div>
       </section>
 
-      {/* SECTION 7: Subscribe + Stay Updated */}
-      <section className="py-20 relative overflow-hidden">
-        {/* Animated Background */}
-        <div className="absolute inset-0">
-          <div className="absolute inset-0 bg-gradient-to-r from-blue-600/20 to-purple-600/20"></div>
-          
-          {/* Matrix-style Animation */}
-          <div className="absolute inset-0 overflow-hidden">
-            {[...Array(20)].map((_, i) => (
-              <motion.div
-                key={i}
-                className="absolute text-blue-400/20 font-mono text-sm"
-                animate={{
-                  y: [-100, window.innerHeight + 100],
-                  opacity: [0, 1, 0]
-                }}
-                transition={{
-                  duration: 3 + Math.random() * 2,
-                  repeat: Infinity,
-                  delay: Math.random() * 2
-                }}
-                style={{
-                  left: `${Math.random() * 100}%`
-                }}
+      {/* All Experiments */}
+      <section className="py-20 bg-gradient-to-b from-gray-800/50 to-gray-900/50">
+        <div className="container-custom">
+          <div className="flex items-center justify-between mb-12">
+            <h2 className="text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-400 to-purple-400">
+              All Experiments
+            </h2>
+            
+            <div className="flex items-center space-x-4">
+              {/* Search */}
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />
+                <input
+                  type="text"
+                  placeholder="Search experiments..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="pl-10 pr-4 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+
+              {/* Filters */}
+              <button
+                onClick={() => setShowFilters(!showFilters)}
+                className={`flex items-center px-4 py-2 rounded-lg transition-colors ${
+                  showFilters ? 'bg-blue-600 text-white' : 'bg-gray-800 text-gray-300 hover:bg-gray-700'
+                }`}
               >
-                {Math.random().toString(36).substring(7)}
+                <Filter size={16} className="mr-2" />
+                Filters
+              </button>
+
+              {/* View Mode */}
+              <div className="flex bg-gray-800 rounded-lg p-1">
+                <button
+                  onClick={() => setViewMode('grid')}
+                  className={`p-2 rounded ${viewMode === 'grid' ? 'bg-blue-600 text-white' : 'text-gray-400'}`}
+                >
+                  <Grid size={16} />
+                </button>
+                <button
+                  onClick={() => setViewMode('list')}
+                  className={`p-2 rounded ${viewMode === 'list' ? 'bg-blue-600 text-white' : 'text-gray-400'}`}
+                >
+                  <List size={16} />
+                </button>
+              </div>
+            </div>
+          </div>
+
+          {/* Filters Panel */}
+          <AnimatePresence>
+            {showFilters && (
+              <motion.div
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: 'auto' }}
+                exit={{ opacity: 0, height: 0 }}
+                className="bg-gray-800/50 backdrop-blur-sm rounded-xl p-6 border border-gray-700/50 mb-8"
+              >
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                  {/* Categories */}
+                  <div>
+                    <h4 className="font-semibold text-white mb-3">Categories</h4>
+                    <div className="flex flex-wrap gap-2">
+                      {categories.map((category) => (
+                        <button
+                          key={category}
+                          onClick={() => setSelectedCategory(category)}
+                          className={`px-3 py-1 rounded-full text-sm transition-colors ${
+                            selectedCategory === category
+                              ? 'bg-blue-600 text-white'
+                              : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
+                          }`}
+                        >
+                          {category}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Tags */}
+                  <div>
+                    <h4 className="font-semibold text-white mb-3">Tags</h4>
+                    <div className="flex flex-wrap gap-2 max-h-32 overflow-y-auto">
+                      {allTags.map((tag) => (
+                        <button
+                          key={tag}
+                          onClick={() => toggleTag(tag)}
+                          className={`px-3 py-1 rounded-full text-sm transition-colors ${
+                            selectedTags.includes(tag)
+                              ? 'bg-purple-600 text-white'
+                              : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
+                          }`}
+                        >
+                          {tag}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Sort */}
+                  <div>
+                    <h4 className="font-semibold text-white mb-3">Sort By</h4>
+                    <select
+                      value={sortBy}
+                      onChange={(e) => setSortBy(e.target.value as any)}
+                      className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    >
+                      <option value="newest">Newest</option>
+                      <option value="popular">Most Popular</option>
+                      <option value="trending">Trending</option>
+                    </select>
+                  </div>
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+
+          {/* Experiments Grid/List */}
+          <div className={viewMode === 'grid' ? 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8' : 'space-y-6'}>
+            {sortedExperiments.map((experiment, index) => (
+              <motion.div
+                key={experiment.id}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.5, delay: index * 0.1 }}
+                className={viewMode === 'list' ? 'flex bg-gray-800/50 backdrop-blur-sm rounded-xl border border-gray-700/50 overflow-hidden hover:border-blue-500/50 transition-all duration-300' : ''}
+              >
+                {viewMode === 'grid' ? (
+                  // Grid View
+                  <div className="bg-gray-800/50 backdrop-blur-sm rounded-xl border border-gray-700/50 overflow-hidden hover:border-blue-500/50 transition-all duration-300 group">
+                    <div className="p-6">
+                      <div className="flex items-center justify-between mb-4">
+                        <div className="flex items-center">
+                          <experiment.icon className="w-8 h-8 text-blue-400 mr-3" />
+                          <div>
+                            <h3 className="font-semibold text-white group-hover:text-blue-400 transition-colors">
+                              {experiment.title}
+                            </h3>
+                            <span className="text-xs text-gray-400">{experiment.category}</span>
+                          </div>
+                        </div>
+                        <span className={`px-2 py-1 rounded-full text-xs ${
+                          experiment.status === 'live' ? 'bg-green-500/20 text-green-400' :
+                          experiment.status === 'beta' ? 'bg-yellow-500/20 text-yellow-400' :
+                          'bg-gray-500/20 text-gray-400'
+                        }`}>
+                          {experiment.status.replace('-', ' ').toUpperCase()}
+                        </span>
+                      </div>
+
+                      <p className="text-gray-400 text-sm mb-4 line-clamp-2">
+                        {experiment.description}
+                      </p>
+
+                      <div className="flex flex-wrap gap-1 mb-4">
+                        {experiment.tags.slice(0, 3).map((tag) => (
+                          <span key={tag} className="text-xs px-2 py-1 bg-gray-700 text-gray-300 rounded">
+                            {tag}
+                          </span>
+                        ))}
+                      </div>
+
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center space-x-3 text-xs text-gray-400">
+                          <span className="flex items-center">
+                            <Heart size={12} className="mr-1" />
+                            {experiment.stats.likes}
+                          </span>
+                          <span className="flex items-center">
+                            <Eye size={12} className="mr-1" />
+                            {experiment.stats.views.toLocaleString()}
+                          </span>
+                        </div>
+                        <Link
+                          to={experiment.link}
+                          className="text-blue-400 hover:text-blue-300 text-sm font-medium flex items-center"
+                        >
+                          Try It
+                          <ArrowRight size={14} className="ml-1" />
+                        </Link>
+                      </div>
+                    </div>
+                  </div>
+                ) : (
+                  // List View
+                  <>
+                    <div className="flex-1 p-6">
+                      <div className="flex items-center justify-between mb-2">
+                        <div className="flex items-center">
+                          <experiment.icon className="w-6 h-6 text-blue-400 mr-3" />
+                          <h3 className="font-semibold text-white">{experiment.title}</h3>
+                          {experiment.aiPowered && (
+                            <span className="ml-2 px-2 py-1 bg-purple-500/20 text-purple-400 text-xs rounded">
+                              AI
+                            </span>
+                          )}
+                        </div>
+                        <span className={`px-2 py-1 rounded-full text-xs ${
+                          experiment.status === 'live' ? 'bg-green-500/20 text-green-400' :
+                          experiment.status === 'beta' ? 'bg-yellow-500/20 text-yellow-400' :
+                          'bg-gray-500/20 text-gray-400'
+                        }`}>
+                          {experiment.status.replace('-', ' ').toUpperCase()}
+                        </span>
+                      </div>
+                      
+                      <p className="text-gray-400 text-sm mb-3">{experiment.description}</p>
+                      
+                      <div className="flex items-center justify-between">
+                        <div className="flex flex-wrap gap-1">
+                          {experiment.tags.slice(0, 4).map((tag) => (
+                            <span key={tag} className="text-xs px-2 py-1 bg-gray-700 text-gray-300 rounded">
+                              {tag}
+                            </span>
+                          ))}
+                        </div>
+                        
+                        <div className="flex items-center space-x-4">
+                          <div className="flex items-center space-x-3 text-xs text-gray-400">
+                            <span className="flex items-center">
+                              <Heart size={12} className="mr-1" />
+                              {experiment.stats.likes}
+                            </span>
+                            <span className="flex items-center">
+                              <Eye size={12} className="mr-1" />
+                              {experiment.stats.views.toLocaleString()}
+                            </span>
+                          </div>
+                          
+                          <Link
+                            to={experiment.link}
+                            className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium flex items-center"
+                          >
+                            <Play size={14} className="mr-1" />
+                            Try It
+                          </Link>
+                        </div>
+                      </div>
+                    </div>
+                  </>
+                )}
               </motion.div>
             ))}
           </div>
 
-          {/* Neon Glow */}
-          <motion.div
-            className="absolute inset-0 bg-gradient-to-r from-blue-500/10 via-purple-500/10 to-pink-500/10"
-            animate={{
-              opacity: [0.3, 0.7, 0.3]
-            }}
-            transition={{
-              duration: 3,
-              repeat: Infinity,
-              ease: "easeInOut"
-            }}
-          />
+          {sortedExperiments.length === 0 && (
+            <div className="text-center py-12">
+              <Beaker className="w-16 h-16 text-gray-600 mx-auto mb-4" />
+              <h3 className="text-xl font-semibold text-gray-400 mb-2">No experiments found</h3>
+              <p className="text-gray-500">Try adjusting your search or filters</p>
+            </div>
+          )}
         </div>
+      </section>
 
-        <div className="container-custom relative z-10">
+      {/* Contributors Section */}
+      <section className="py-20">
+        <div className="container-custom">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6 }}
             viewport={{ once: true }}
-            className="text-center max-w-3xl mx-auto"
+            className="text-center mb-16"
           >
-            <motion.div
-              animate={{
-                boxShadow: [
-                  "0 0 20px rgba(59, 130, 246, 0.3)",
-                  "0 0 40px rgba(147, 51, 234, 0.3)",
-                  "0 0 20px rgba(59, 130, 246, 0.3)"
-                ]
-              }}
-              transition={{ duration: 2, repeat: Infinity }}
-              className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-gradient-to-br from-blue-500/20 to-purple-500/20 backdrop-blur-sm border border-white/10 mb-8"
-            >
-              <Bell className="w-10 h-10 text-blue-400" />
-            </motion.div>
-
-            <h2 className="text-4xl font-bold mb-6 bg-clip-text text-transparent bg-gradient-to-r from-blue-400 to-purple-400">
-              Get Monthly Lab Drops
+            <h2 className="text-3xl font-bold mb-4 bg-clip-text text-transparent bg-gradient-to-r from-blue-400 to-purple-400">
+              Contributors Wall
             </h2>
-            
-            <p className="text-xl text-gray-300 mb-8">
-              Be the first to know about our latest experiments and get exclusive access to beta features.
+            <p className="text-gray-400 text-lg max-w-2xl mx-auto">
+              Meet the talented individuals who make Pixeloria Labs possible
             </p>
+          </motion.div>
 
-            <form onSubmit={handleSubscribe} className="flex flex-col sm:flex-row max-w-md mx-auto mb-8">
-              <input
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="Your email address"
-                className="flex-1 px-6 py-4 rounded-l-xl sm:rounded-r-none rounded-r-xl mb-2 sm:mb-0 bg-gray-800/50 backdrop-blur-sm border border-gray-600 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                required
-              />
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+            {contributors.map((contributor, index) => (
+              <motion.div
+                key={contributor.id}
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.5, delay: index * 0.1 }}
+                viewport={{ once: true }}
+                className="bg-gray-800/50 backdrop-blur-sm rounded-xl p-6 border border-gray-700/50 text-center hover:border-blue-500/50 transition-all duration-300"
+              >
+                <img
+                  src={contributor.avatar}
+                  alt={contributor.name}
+                  className="w-20 h-20 rounded-full mx-auto mb-4 object-cover"
+                />
+                <h3 className="font-semibold text-white mb-1">{contributor.name}</h3>
+                <p className="text-blue-400 text-sm mb-3">{contributor.role}</p>
+                <div className="flex items-center justify-center text-gray-400 text-sm">
+                  <Star size={14} className="mr-1" />
+                  {contributor.contributions} contributions
+                </div>
+              </motion.div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* CTA Section */}
+      <section className="py-20 relative overflow-hidden">
+        <div className="absolute inset-0 bg-gradient-to-r from-blue-600/20 to-purple-600/20"></div>
+        
+        <div className="container-custom relative z-10 text-center">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6 }}
+            viewport={{ once: true }}
+            className="max-w-3xl mx-auto"
+          >
+            <h2 className="text-4xl font-bold mb-6 bg-clip-text text-transparent bg-gradient-to-r from-blue-400 to-purple-400">
+              Ready to Collaborate?
+            </h2>
+            <p className="text-xl text-gray-300 mb-8">
+              Join our community of innovators and help us build the future of web development. 
+              Contribute to existing experiments or propose new ones.
+            </p>
+            <div className="flex flex-col sm:flex-row justify-center gap-4">
               <motion.button
-                type="submit"
-                className="px-8 py-4 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-r-xl sm:rounded-l-none rounded-l-xl font-semibold hover:from-blue-700 hover:to-purple-700 transition-all"
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
+                className="inline-flex items-center px-8 py-4 rounded-full bg-gradient-to-r from-blue-600 to-purple-600 text-white font-bold text-lg shadow-2xl hover:shadow-blue-500/25 transition-all duration-300"
               >
-                Subscribe
+                <Lightbulb className="mr-2" size={20} />
+                Propose Experiment
+                <ArrowRight className="ml-2" size={20} />
               </motion.button>
-            </form>
-
-            <AnimatePresence>
-              {subscribed && (
-                <motion.div
-                  initial={{ opacity: 0, scale: 0.8 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  exit={{ opacity: 0, scale: 0.8 }}
-                  className="bg-green-600/20 border border-green-500/30 rounded-xl p-4 mb-8"
-                >
-                  <div className="flex items-center justify-center text-green-400">
-                    <Sparkles className="w-5 h-5 mr-2" />
-                    🎉 You've been added to our next Lab Drop!
-                  </div>
-                </motion.div>
-              )}
-            </AnimatePresence>
-
-            <p className="text-gray-400 text-sm">
-              Join 2,500+ developers and designers getting exclusive lab updates
-            </p>
+              
+              <motion.button
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                className="inline-flex items-center px-8 py-4 rounded-full border-2 border-white/20 text-white font-bold text-lg backdrop-blur-sm hover:bg-white/10 transition-all duration-300"
+              >
+                <Github className="mr-2" size={20} />
+                View on GitHub
+                <ExternalLink className="ml-2" size={20} />
+              </motion.button>
+            </div>
           </motion.div>
         </div>
       </section>
