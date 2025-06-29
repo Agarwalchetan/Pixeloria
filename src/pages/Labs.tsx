@@ -10,7 +10,7 @@ import {
   Wand2, Sliders, Monitor, Smartphone, Tablet, Link2,
   Plus, ChevronRight, ChevronDown, X, Save, Copy,
   GitBranch, Bookmark, Bell, Mail, Send, Mic, Camera,
-  Headphones, Gamepad2, Zap as Lightning, Flame
+  Headphones, Gamepad2, Zap as Lightning, Flame, Check
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
