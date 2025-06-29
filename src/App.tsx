@@ -16,6 +16,7 @@ import ColorGenerator from './pages/labs/ColorGenerator';
 import AnimationTester from './pages/labs/AnimationTester';
 import CodePlayground from './pages/labs/CodePlayground';
 import ABTesting from './pages/labs/ABTesting';
+import ComponentStore from './pages/labs/ComponentStore';
 
 function App() {
   return (
@@ -37,6 +38,7 @@ function App() {
       <Route path="/labs/animation-tester" element={<AnimationTester />} />
       <Route path="/labs/code-playground" element={<CodePlayground />} />
       <Route path="/labs/ab-testing" element={<ABTesting />} />
+      <Route path="/labs/component-store" element={<ComponentStore />} />
     </Routes>
   );
 }
