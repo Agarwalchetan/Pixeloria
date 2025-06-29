@@ -17,6 +17,8 @@ import AnimationTester from './pages/labs/AnimationTester';
 import CodePlayground from './pages/labs/CodePlayground';
 import ABTesting from './pages/labs/ABTesting';
 import ComponentStore from './pages/labs/ComponentStore';
+import AnimationComposer from './pages/labs/AnimationComposer';
+import NeuralNetworkViz from './pages/labs/NeuralNetworkViz';
 
 function App() {
   return (
@@ -39,6 +41,8 @@ function App() {
       <Route path="/labs/code-playground" element={<CodePlayground />} />
       <Route path="/labs/ab-testing" element={<ABTesting />} />
       <Route path="/labs/component-store" element={<ComponentStore />} />
+      <Route path="/labs/animation-composer" element={<AnimationComposer />} />
+      <Route path="/labs/neural-network-viz" element={<NeuralNetworkViz />} />
     </Routes>
   );
 }

@@ -167,14 +167,36 @@ const Labs: React.FC = () => {
       sourceUrl: 'https://github.com/pixeloria/component-store'
     },
     {
+      id: 'animation-composer',
+      title: 'Animation Composer',
+      description: 'Visual animation builder with drag-and-drop interface, timeline editor, and code export.',
+      category: 'Animations',
+      tags: ['Animation', 'Visual Editor', 'Timeline', 'Code Export'],
+      icon: Layers,
+      status: 'live',
+      featured: true,
+      stats: {
+        views: 8920,
+        likes: 445,
+        forks: 67,
+        lastUpdated: '1 week ago'
+      },
+      techStack: ['React', 'Framer Motion', 'Canvas', 'TypeScript'],
+      difficulty: 'advanced',
+      estimatedTime: '35 min',
+      link: '/labs/animation-composer',
+      demoUrl: '/labs/animation-composer',
+      sourceUrl: 'https://github.com/pixeloria/animation-composer'
+    },
+    {
       id: 'neural-network-viz',
       title: 'Neural Network Visualizer',
       description: 'Interactive visualization of neural networks with real-time training and customizable architectures.',
       category: 'AI',
       tags: ['AI', 'Machine Learning', 'Visualization', 'Neural Networks'],
       icon: Brain,
-      status: 'beta',
-      featured: false,
+      status: 'live',
+      featured: true,
       aiPowered: true,
       stats: {
         views: 7230,
