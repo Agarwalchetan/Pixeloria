@@ -276,7 +276,7 @@ const Navbar: React.FC<NavbarProps> = ({ isScrolled }) => {
                 )}
               </NavLink>
 
-              {/* Labs Dropdown Menu */}
+              {/* Labs Dropdown Menu - Fixed with scrolling */}
               <AnimatePresence>
                 {showLabsDropdown && (
                   <motion.div
@@ -297,44 +297,49 @@ const Navbar: React.FC<NavbarProps> = ({ isScrolled }) => {
                         </span>
                       </div>
                       
-                      <div className="grid grid-cols-1 gap-2">
-                        {labsItems.map((item, index) => (
-                          <motion.div
-                            key={item.path}
-                            initial={{ opacity: 0, x: -20 }}
-                            animate={{ opacity: 1, x: 0 }}
-                            transition={{ delay: index * 0.05 }}
-                          >
-                            <NavLink
-                              to={item.path}
-                              className="group flex items-center p-3 rounded-xl hover:bg-white/5 transition-all duration-300 border border-transparent hover:border-gray-700/50"
+                      {/* Scrollable container with fixed height */}
+                      <div className="max-h-80 overflow-y-auto scrollbar-thin scrollbar-thumb-gray-600 scrollbar-track-gray-800">
+                        <div className="grid grid-cols-1 gap-2 pr-2">
+                          {labsItems.map((item, index) => (
+                            <motion.div
+                              key={item.path}
+                              initial={{ opacity: 0, x: -20 }}
+                              animate={{ opacity: 1, x: 0 }}
+                              transition={{ delay: index * 0.05 }}
                             >
-                              <div className="flex items-center space-x-3 flex-1">
-                                <span className="text-xl">{item.icon}</span>
-                                <div className="flex-1">
-                                  <div className="flex items-center space-x-2">
-                                    <span className="font-medium text-white group-hover:text-blue-400 transition-colors">
-                                      {item.name}
-                                    </span>
-                                    {item.featured && (
-                                      <Star size={12} className="text-yellow-400 fill-current" />
-                                    )}
+                              <NavLink
+                                to={item.path}
+                                className="group flex items-center p-3 rounded-xl hover:bg-white/5 transition-all duration-300 border border-transparent hover:border-gray-700/50"
+                                onClick={closeMenu}
+                              >
+                                <div className="flex items-center space-x-3 flex-1">
+                                  <span className="text-xl">{item.icon}</span>
+                                  <div className="flex-1">
+                                    <div className="flex items-center space-x-2">
+                                      <span className="font-medium text-white group-hover:text-blue-400 transition-colors">
+                                        {item.name}
+                                      </span>
+                                      {item.featured && (
+                                        <Star size={12} className="text-yellow-400 fill-current" />
+                                      )}
+                                    </div>
+                                    <p className="text-xs text-gray-400 group-hover:text-gray-300 transition-colors">
+                                      {item.description}
+                                    </p>
                                   </div>
-                                  <p className="text-xs text-gray-400 group-hover:text-gray-300 transition-colors">
-                                    {item.description}
-                                  </p>
                                 </div>
-                              </div>
-                              <Zap size={14} className="text-gray-500 group-hover:text-blue-400 transition-colors opacity-0 group-hover:opacity-100" />
-                            </NavLink>
-                          </motion.div>
-                        ))}
+                                <Zap size={14} className="text-gray-500 group-hover:text-blue-400 transition-colors opacity-0 group-hover:opacity-100" />
+                              </NavLink>
+                            </motion.div>
+                          ))}
+                        </div>
                       </div>
                       
                       <div className="mt-4 pt-4 border-t border-gray-800/50">
                         <NavLink
                           to="/labs"
                           className="flex items-center justify-center w-full py-2 text-sm text-blue-400 hover:text-blue-300 transition-colors font-medium"
+                          onClick={closeMenu}
                         >
                           View All Experiments →
                         </NavLink>
@@ -493,7 +498,7 @@ const Navbar: React.FC<NavbarProps> = ({ isScrolled }) => {
                     </motion.div>
                   ))}
 
-                  {/* Mobile Labs Section */}
+                  {/* Mobile Labs Section with scrolling */}
                   <motion.div
                     initial={{ opacity: 0, x: -20 }}
                     animate={{ opacity: 1, x: 0 }}
@@ -510,36 +515,39 @@ const Navbar: React.FC<NavbarProps> = ({ isScrolled }) => {
                       </span>
                     </div>
                     
-                    <div className="grid grid-cols-1 gap-2">
-                      {labsItems.slice(0, 4).map((item, index) => (
-                        <motion.div
-                          key={item.path}
-                          initial={{ opacity: 0, x: -20 }}
-                          animate={{ opacity: 1, x: 0 }}
-                          transition={{ delay: 0.6 + index * 0.1 }}
-                        >
-                          <NavLink
-                            to={item.path}
-                            className="flex items-center p-3 rounded-xl hover:bg-white/5 transition-all duration-300"
-                            onClick={closeMenu}
+                    {/* Scrollable container for mobile labs */}
+                    <div className="max-h-64 overflow-y-auto scrollbar-thin scrollbar-thumb-gray-600 scrollbar-track-gray-800">
+                      <div className="grid grid-cols-1 gap-2 pr-2">
+                        {labsItems.map((item, index) => (
+                          <motion.div
+                            key={item.path}
+                            initial={{ opacity: 0, x: -20 }}
+                            animate={{ opacity: 1, x: 0 }}
+                            transition={{ delay: 0.6 + index * 0.1 }}
                           >
-                            <span className="text-lg mr-3">{item.icon}</span>
-                            <div className="flex-1">
-                              <div className="flex items-center space-x-2">
-                                <span className="font-medium text-white text-sm">
-                                  {item.name}
-                                </span>
-                                {item.featured && (
-                                  <Star size={10} className="text-yellow-400 fill-current" />
-                                )}
+                            <NavLink
+                              to={item.path}
+                              className="flex items-center p-3 rounded-xl hover:bg-white/5 transition-all duration-300"
+                              onClick={closeMenu}
+                            >
+                              <span className="text-lg mr-3">{item.icon}</span>
+                              <div className="flex-1">
+                                <div className="flex items-center space-x-2">
+                                  <span className="font-medium text-white text-sm">
+                                    {item.name}
+                                  </span>
+                                  {item.featured && (
+                                    <Star size={10} className="text-yellow-400 fill-current" />
+                                  )}
+                                </div>
+                                <p className="text-xs text-gray-400">
+                                  {item.description}
+                                </p>
                               </div>
-                              <p className="text-xs text-gray-400">
-                                {item.description}
-                              </p>
-                            </div>
-                          </NavLink>
-                        </motion.div>
-                      ))}
+                            </NavLink>
+                          </motion.div>
+                        ))}
+                      </div>
                     </div>
                     
                     <NavLink
