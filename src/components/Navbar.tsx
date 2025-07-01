@@ -136,7 +136,7 @@ const Navbar: React.FC<NavbarProps> = ({ isScrolled }) => {
               className="flex items-center space-x-3 text-2xl font-bold text-white group"
             >
               <motion.div
-                animate={{ rotate: [0, 360] }}
+                animate={{ rotate: 360 }}
                 transition={{ duration: 20, repeat: Infinity, ease: "linear" }}
                 className="relative"
               >
@@ -331,7 +331,7 @@ const Navbar: React.FC<NavbarProps> = ({ isScrolled }) => {
                     animate={{ opacity: 1, y: 0, scale: 1 }}
                     exit={{ opacity: 0, y: 10, scale: 0.95 }}
                     transition={{ duration: 0.2 }}
-                    className="absolute top-full left-0 mt-2 w-[520px] bg-gray-900/98 backdrop-blur-xl border border-gray-800/50 rounded-2xl shadow-2xl shadow-black/50 overflow-hidden"
+                    className="absolute top-full left-0 mt-2 w-[520px] bg-gray-900/98 backdrop-blur-xl border border-gray-800/50 rounded-2xl shadow-2xl shadow-black/50 overflow-hidden z-50"
                   >
                     {/* Header */}
                     <div className="p-6 bg-gradient-to-r from-blue-600/10 to-purple-600/10 border-b border-gray-800/50">
