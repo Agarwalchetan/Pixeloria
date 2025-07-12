@@ -1,0 +1,38 @@
+# Frontend-specific configs to ignore
+vite.config.ts
+postcss.config.js
+tailwind.config.js
+tsconfig.app.json
+tsconfig.node.json
+tsconfig.json
+eslint.config.js
+
+# Build/cache folders (if generated)
+node_modules/*
+dist/*
+build/*
+.next/*
+.cache/*
+.vscode/*
+
+# Frontend assets/components
+src/*
+public/*
+*.css
+*.tsx
+*.ts
+*.jsx
+*.png
+*.jpg
+*.jpeg
+*.svg
+*.mp4
+
+# System files
+.DS_Store
+.env
+*.log
+*.zip
+
+# Git stuff
+.git/*
