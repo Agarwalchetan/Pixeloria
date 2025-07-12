@@ -1,9 +1,18 @@
-import React from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Code, Mail, Phone, MapPin, Linkedin, Twitter, Github, Facebook, Instagram, Beaker } from 'lucide-react';
+import {
+  Code, Mail, Phone, MapPin,
+  Linkedin, Twitter, Github, Facebook, Instagram, Beaker
+} from 'lucide-react';
 
 const Footer: React.FC = () => {
-  const currentYear = new Date().getFullYear();
+  const currentYear = useMemo(() => new Date().getFullYear(), []);
+  const [showIcons, setShowIcons] = useState(false);
+
+  useEffect(() => {
+    const timeout = setTimeout(() => setShowIcons(true), 300); // Lazy render icons
+    return () => clearTimeout(timeout);
+  }, []);
 
   return (
     <footer className="bg-gray-900 border-t border-gray-800">
@@ -20,65 +29,37 @@ const Footer: React.FC = () => {
             <p className="text-gray-400 mb-4">
               Crafting Digital Experiences That Grow Your Business
             </p>
-            <div className="flex space-x-4">
-              <a href="#" className="text-gray-400 hover:text-blue-400 transition-colors">
-                <Twitter size={20} />
-              </a>
-              <a href="#" className="text-gray-400 hover:text-blue-400 transition-colors">
-                <Facebook size={20} />
-              </a>
-              <a href="#" className="text-gray-400 hover:text-blue-400 transition-colors">
-                <Instagram size={20} />
-              </a>
-              <a href="#" className="text-gray-400 hover:text-blue-400 transition-colors">
-                <Linkedin size={20} />
-              </a>
-              <a href="#" className="text-gray-400 hover:text-blue-400 transition-colors">
-                <Github size={20} />
-              </a>
-            </div>
+            {showIcons && (
+              <div className="flex space-x-4">
+                <a href="#" className="text-gray-400 hover:text-blue-400 transition duration-200"><Twitter size={20} /></a>
+                <a href="#" className="text-gray-400 hover:text-blue-400 transition duration-200"><Facebook size={20} /></a>
+                <a href="#" className="text-gray-400 hover:text-blue-400 transition duration-200"><Instagram size={20} /></a>
+                <a href="#" className="text-gray-400 hover:text-blue-400 transition duration-200"><Linkedin size={20} /></a>
+                <a href="#" className="text-gray-400 hover:text-blue-400 transition duration-200"><Github size={20} /></a>
+              </div>
+            )}
           </div>
 
           {/* Quick Links */}
           <div>
             <h3 className="text-xl font-bold mb-4 text-white">Quick Links</h3>
             <ul className="space-y-2">
-              <li>
-                <Link to="/" className="text-gray-400 hover:text-blue-400 transition-colors">
-                  Home
-                </Link>
-              </li>
-              <li>
-                <Link to="/about" className="text-gray-400 hover:text-blue-400 transition-colors">
-                  About Us
-                </Link>
-              </li>
-              <li>
-                <Link to="/services" className="text-gray-400 hover:text-blue-400 transition-colors">
-                  Services
-                </Link>
-              </li>
-              <li>
-                <Link to="/portfolio" className="text-gray-400 hover:text-blue-400 transition-colors">
-                  Portfolio
-                </Link>
-              </li>
-              <li>
-                <Link to="/labs" className="text-gray-400 hover:text-blue-400 transition-colors flex items-center">
-                  <Beaker size={16} className="mr-1" />
-                  Labs
-                </Link>
-              </li>
-              <li>
-                <Link to="/blog" className="text-gray-400 hover:text-blue-400 transition-colors">
-                  Blog
-                </Link>
-              </li>
-              <li>
-                <Link to="/contact" className="text-gray-400 hover:text-blue-400 transition-colors">
-                  Contact
-                </Link>
-              </li>
+              {[
+                { label: "Home", path: "/" },
+                { label: "About Us", path: "/about" },
+                { label: "Services", path: "/services" },
+                { label: "Portfolio", path: "/portfolio" },
+                { label: "Labs", path: "/labs", icon: Beaker },
+                { label: "Blog", path: "/blog" },
+                { label: "Contact", path: "/contact" },
+              ].map(({ label, path, icon: Icon }, i) => (
+                <li key={i}>
+                  <Link to={path} className="text-gray-400 hover:text-blue-400 transition duration-200 flex items-center">
+                    {Icon && <Icon size={16} className="mr-1" />}
+                    {label}
+                  </Link>
+                </li>
+              ))}
             </ul>
           </div>
 
@@ -86,31 +67,16 @@ const Footer: React.FC = () => {
           <div>
             <h3 className="text-xl font-bold mb-4 text-white">Services</h3>
             <ul className="space-y-2">
-              <li>
-                <Link to="/services" className="text-gray-400 hover:text-blue-400 transition-colors">
-                  Web Design
-                </Link>
-              </li>
-              <li>
-                <Link to="/services" className="text-gray-400 hover:text-blue-400 transition-colors">
-                  eCommerce Development
-                </Link>
-              </li>
-              <li>
-                <Link to="/services" className="text-gray-400 hover:text-blue-400 transition-colors">
-                  Web Applications
-                </Link>
-              </li>
-              <li>
-                <Link to="/services" className="text-gray-400 hover:text-blue-400 transition-colors">
-                  CMS Integrations
-                </Link>
-              </li>
-              <li>
-                <Link to="/services" className="text-gray-400 hover:text-blue-400 transition-colors">
-                  Maintenance & Support
-                </Link>
-              </li>
+              {[
+                "Web Design", "eCommerce Development", "Web Applications",
+                "CMS Integrations", "Maintenance & Support"
+              ].map((service, idx) => (
+                <li key={idx}>
+                  <Link to="/services" className="text-gray-400 hover:text-blue-400 transition duration-200">
+                    {service}
+                  </Link>
+                </li>
+              ))}
             </ul>
           </div>
 
@@ -127,13 +93,13 @@ const Footer: React.FC = () => {
               </li>
               <li className="flex items-center space-x-3">
                 <Phone size={20} className="text-blue-400 shrink-0" />
-                <a href="tel:+14155550123" className="text-gray-400 hover:text-blue-400 transition-colors">
+                <a href="tel:+14155550123" className="text-gray-400 hover:text-blue-400 transition duration-200">
                   (415) 555-0123
                 </a>
               </li>
               <li className="flex items-center space-x-3">
                 <Mail size={20} className="text-blue-400 shrink-0" />
-                <a href="mailto:hello@pixeloria.com" className="text-gray-400 hover:text-blue-400 transition-colors">
+                <a href="mailto:hello@pixeloria.com" className="text-gray-400 hover:text-blue-400 transition duration-200">
                   hello@pixeloria.com
                 </a>
               </li>
@@ -146,9 +112,7 @@ const Footer: React.FC = () => {
           <div className="md:flex md:justify-between md:items-center">
             <div className="mb-6 md:mb-0">
               <h3 className="text-xl font-bold mb-2 text-white">Subscribe to our newsletter</h3>
-              <p className="text-gray-400">
-                Stay updated with our latest news and insights
-              </p>
+              <p className="text-gray-400">Stay updated with our latest news and insights</p>
             </div>
             <div className="flex flex-col sm:flex-row">
               <input
@@ -156,9 +120,7 @@ const Footer: React.FC = () => {
                 placeholder="Your email address"
                 className="px-4 py-3 mb-2 sm:mb-0 sm:mr-2 bg-gray-800 border border-gray-700 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-white placeholder-gray-400"
               />
-              <button className="btn-primary">
-                Subscribe
-              </button>
+              <button className="btn-primary">Subscribe</button>
             </div>
           </div>
         </div>
@@ -166,18 +128,19 @@ const Footer: React.FC = () => {
         {/* Copyright */}
         <div className="border-t border-gray-800 mt-8 pt-8 text-center text-gray-400">
           <p>© {currentYear} Pixeloria. All rights reserved.</p>
-          <div className="mt-2 space-x-4">
-            <Link to="/privacy-policy" className="hover:text-blue-400 transition-colors">
+          <p className="mt-2 space-x-4">
+            <Link to="/privacy-policy" className="hover:text-blue-400 transition duration-200">
               Privacy Policy
             </Link>
-            <Link to="/terms" className="hover:text-blue-400 transition-colors">
+            |
+            <Link to="/terms" className="hover:text-blue-400 transition duration-200">
               Terms of Service
             </Link>
-          </div>
+          </p>
         </div>
       </div>
     </footer>
   );
 };
 
-export default Footer;
+export default React.memo(Footer);
