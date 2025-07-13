@@ -1,5 +1,5 @@
 import jwt from 'jsonwebtoken';
-import { query } from '../database/connection.js';
+import User from '../database/models/User.js';
 import { logger } from '../utils/logger.js';
 
 export const authenticateToken = async (req, res, next) => {
@@ -17,16 +17,16 @@ export const authenticateToken = async (req, res, next) => {
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
     
     // Get user from database
-    const result = await query('SELECT id, name, email, role FROM users WHERE id = $1', [decoded.userId]);
+    const user = await User.findById(decoded.userId).select('-password_hash');
     
-    if (result.rows.length === 0) {
+    if (!user) {
       return res.status(401).json({
         success: false,
         message: 'Invalid token',
       });
     }
 
-    req.user = result.rows[0];
+    req.user = user;
     next();
   } catch (error) {
     logger.error('Authentication error:', error);

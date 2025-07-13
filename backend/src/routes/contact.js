@@ -1,6 +1,6 @@
 import express from 'express';
-import { query } from '../database/connection.js';
-import { validate, schemas } from '../middleware/validation.js';
+import Contact from '../database/models/Contact.js';
+import NewsletterSubscriber from '../database/models/NewsletterSubscriber.js';
 import { uploadMiddleware } from '../utils/fileUpload.js';
 import { sendEmail, emailTemplates } from '../utils/email.js';
 import { logger } from '../utils/logger.js';
@@ -80,20 +80,25 @@ router.post('/',
       }
 
       // Save to database
-      const result = await query(
-        `INSERT INTO contacts (first_name, last_name, email, company, phone, project_type, budget, message, file_url)
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
-         RETURNING *`,
-        [first_name, last_name, email, company, phone, project_type, budget, message, fileUrl]
-      );
+      const contact = new Contact({
+        first_name,
+        last_name,
+        email,
+        company,
+        phone,
+        project_type,
+        budget,
+        message,
+        file_url: fileUrl
+      });
 
-      const contactData = result.rows[0];
+      await contact.save();
 
       // Send notification email to admin
       try {
         await sendEmail({
           to: process.env.ADMIN_EMAIL,
-          ...emailTemplates.contactForm(contactData),
+          ...emailTemplates.contactForm(contact),
         });
       } catch (emailError) {
         logger.error('Contact form notification email failed:', emailError);
@@ -131,11 +136,11 @@ router.post('/',
         message: 'Contact form submitted successfully',
         data: {
           contact: {
-            id: contactData.id,
-            first_name: contactData.first_name,
-            last_name: contactData.last_name,
-            email: contactData.email,
-            created_at: contactData.created_at,
+            id: contact._id,
+            first_name: contact.first_name,
+            last_name: contact.last_name,
+            email: contact.email,
+            createdAt: contact.createdAt,
           },
         },
       });
@@ -168,17 +173,21 @@ router.post('/',
  *       400:
  *         description: Email already subscribed
  */
-router.post('/newsletter', validate(schemas.newsletter), async (req, res, next) => {
+router.post('/newsletter', async (req, res, next) => {
   try {
     const { email } = req.body;
 
-    // Check if email already exists
-    const existingSubscriber = await query(
-      'SELECT id FROM newsletter_subscribers WHERE email = $1',
-      [email]
-    );
+    if (!email) {
+      return res.status(400).json({
+        success: false,
+        message: 'Email is required',
+      });
+    }
 
-    if (existingSubscriber.rows.length > 0) {
+    // Check if email already exists
+    const existingSubscriber = await NewsletterSubscriber.findOne({ email });
+
+    if (existingSubscriber) {
       return res.status(400).json({
         success: false,
         message: 'Email already subscribed to newsletter',
@@ -186,10 +195,8 @@ router.post('/newsletter', validate(schemas.newsletter), async (req, res, next) 
     }
 
     // Add to newsletter
-    await query(
-      'INSERT INTO newsletter_subscribers (email) VALUES ($1)',
-      [email]
-    );
+    const subscriber = new NewsletterSubscriber({ email });
+    await subscriber.save();
 
     // Send welcome email
     try {

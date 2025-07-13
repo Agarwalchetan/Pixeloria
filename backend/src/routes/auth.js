@@ -1,7 +1,7 @@
 import express from 'express';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
-import { query } from '../database/connection.js';
+import User from '../database/models/User.js';
 import { validate, schemas } from '../middleware/validation.js';
 import { authenticateToken } from '../middleware/auth.js';
 import { sendEmail, emailTemplates } from '../utils/email.js';
@@ -43,8 +43,8 @@ router.post('/register', validate(schemas.register), async (req, res, next) => {
     const { name, email, password } = req.body;
 
     // Check if user already exists
-    const existingUser = await query('SELECT id FROM users WHERE email = $1', [email]);
-    if (existingUser.rows.length > 0) {
+    const existingUser = await User.findOne({ email });
+    if (existingUser) {
       return res.status(400).json({
         success: false,
         message: 'User already exists with this email',
@@ -55,16 +55,17 @@ router.post('/register', validate(schemas.register), async (req, res, next) => {
     const hashedPassword = await bcrypt.hash(password, 12);
 
     // Create user
-    const result = await query(
-      'INSERT INTO users (name, email, password_hash) VALUES ($1, $2, $3) RETURNING id, name, email, role',
-      [name, email, hashedPassword]
-    );
+    const user = new User({
+      name,
+      email,
+      password_hash: hashedPassword
+    });
 
-    const user = result.rows[0];
+    await user.save();
 
     // Generate JWT token
     const token = jwt.sign(
-      { userId: user.id },
+      { userId: user._id },
       process.env.JWT_SECRET,
       { expiresIn: process.env.JWT_EXPIRES_IN }
     );
@@ -84,7 +85,7 @@ router.post('/register', validate(schemas.register), async (req, res, next) => {
       message: 'User registered successfully',
       data: {
         user: {
-          id: user.id,
+          id: user._id,
           name: user.name,
           email: user.email,
           role: user.role,
@@ -128,8 +129,7 @@ router.post('/login', validate(schemas.login), async (req, res, next) => {
     const { email, password } = req.body;
 
     // Get user from database
-    const result = await query('SELECT * FROM users WHERE email = $1', [email]);
-    const user = result.rows[0];
+    const user = await User.findOne({ email });
 
     if (!user) {
       return res.status(401).json({
@@ -149,7 +149,7 @@ router.post('/login', validate(schemas.login), async (req, res, next) => {
 
     // Generate JWT token
     const token = jwt.sign(
-      { userId: user.id },
+      { userId: user._id },
       process.env.JWT_SECRET,
       { expiresIn: process.env.JWT_EXPIRES_IN }
     );
@@ -159,7 +159,7 @@ router.post('/login', validate(schemas.login), async (req, res, next) => {
       message: 'Login successful',
       data: {
         user: {
-          id: user.id,
+          id: user._id,
           name: user.name,
           email: user.email,
           role: user.role,
@@ -227,8 +227,7 @@ router.post('/forgot-password', validate(schemas.forgotPassword), async (req, re
     const { email } = req.body;
 
     // Check if user exists
-    const result = await query('SELECT id, name FROM users WHERE email = $1', [email]);
-    const user = result.rows[0];
+    const user = await User.findOne({ email });
 
     if (!user) {
       return res.status(404).json({
@@ -239,7 +238,7 @@ router.post('/forgot-password', validate(schemas.forgotPassword), async (req, re
 
     // Generate reset token
     const resetToken = jwt.sign(
-      { userId: user.id },
+      { userId: user._id },
       process.env.JWT_SECRET,
       { expiresIn: '1h' }
     );
@@ -299,10 +298,9 @@ router.post('/reset-password', validate(schemas.resetPassword), async (req, res,
     const hashedPassword = await bcrypt.hash(password, 12);
 
     // Update user password
-    await query(
-      'UPDATE users SET password_hash = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2',
-      [hashedPassword, decoded.userId]
-    );
+    await User.findByIdAndUpdate(decoded.userId, {
+      password_hash: hashedPassword
+    });
 
     res.json({
       success: true,

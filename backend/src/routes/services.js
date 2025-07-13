@@ -1,5 +1,5 @@
 import express from 'express';
-import { query } from '../database/connection.js';
+import Service from '../database/models/Service.js';
 import { authenticateToken, requireAdmin } from '../middleware/auth.js';
 import { validate, schemas } from '../middleware/validation.js';
 
@@ -31,25 +31,18 @@ router.get('/', async (req, res, next) => {
   try {
     const { category, status = 'active' } = req.query;
 
-    let queryText = 'SELECT * FROM services WHERE status = $1';
-    let queryParams = [status];
-    let paramCount = 1;
-
+    const filter = { status };
     if (category) {
-      paramCount++;
-      queryText += ` AND category = $${paramCount}`;
-      queryParams.push(category);
+      filter.category = category;
     }
 
-    queryText += ' ORDER BY created_at DESC';
-
-    const result = await query(queryText, queryParams);
+    const services = await Service.find(filter).sort({ createdAt: -1 });
 
     res.json({
       success: true,
       data: {
-        services: result.rows,
-        total: result.rows.length,
+        services,
+        total: services.length,
       },
     });
   } catch (error) {
@@ -80,9 +73,9 @@ router.get('/:id', async (req, res, next) => {
   try {
     const { id } = req.params;
 
-    const result = await query('SELECT * FROM services WHERE id = $1', [id]);
+    const service = await Service.findById(id);
 
-    if (result.rows.length === 0) {
+    if (!service) {
       return res.status(404).json({
         success: false,
         message: 'Service not found',
@@ -92,7 +85,7 @@ router.get('/:id', async (req, res, next) => {
     res.json({
       success: true,
       data: {
-        service: result.rows[0],
+        service,
       },
     });
   } catch (error) {
@@ -150,18 +143,23 @@ router.post('/', authenticateToken, requireAdmin, validate(schemas.service), asy
       status = 'active'
     } = req.body;
 
-    const result = await query(
-      `INSERT INTO services (title, description, features, price_range, duration, category, status)
-       VALUES ($1, $2, $3, $4, $5, $6, $7)
-       RETURNING *`,
-      [title, description, features, price_range, duration, category, status]
-    );
+    const service = new Service({
+      title,
+      description,
+      features,
+      price_range,
+      duration,
+      category,
+      status
+    });
+
+    await service.save();
 
     res.status(201).json({
       success: true,
       message: 'Service created successfully',
       data: {
-        service: result.rows[0],
+        service,
       },
     });
   } catch (error) {
@@ -195,48 +193,20 @@ router.patch('/:id', authenticateToken, requireAdmin, async (req, res, next) => 
     const { id } = req.params;
     const updates = req.body;
 
-    // Check if service exists
-    const existingService = await query('SELECT * FROM services WHERE id = $1', [id]);
-    if (existingService.rows.length === 0) {
+    const service = await Service.findByIdAndUpdate(id, updates, { new: true });
+
+    if (!service) {
       return res.status(404).json({
         success: false,
         message: 'Service not found',
       });
     }
 
-    // Build update query
-    const updateFields = [];
-    const updateValues = [];
-    let paramCount = 0;
-
-    Object.keys(updates).forEach(key => {
-      if (updates[key] !== undefined) {
-        paramCount++;
-        updateFields.push(`${key} = $${paramCount}`);
-        updateValues.push(updates[key]);
-      }
-    });
-
-    if (updateFields.length === 0) {
-      return res.status(400).json({
-        success: false,
-        message: 'No valid fields to update',
-      });
-    }
-
-    updateFields.push(`updated_at = CURRENT_TIMESTAMP`);
-    updateValues.push(id);
-
-    const result = await query(
-      `UPDATE services SET ${updateFields.join(', ')} WHERE id = $${paramCount + 1} RETURNING *`,
-      updateValues
-    );
-
     res.json({
       success: true,
       message: 'Service updated successfully',
       data: {
-        service: result.rows[0],
+        service,
       },
     });
   } catch (error) {
@@ -269,9 +239,9 @@ router.delete('/:id', authenticateToken, requireAdmin, async (req, res, next) =>
   try {
     const { id } = req.params;
 
-    const result = await query('DELETE FROM services WHERE id = $1 RETURNING *', [id]);
+    const service = await Service.findByIdAndDelete(id);
 
-    if (result.rows.length === 0) {
+    if (!service) {
       return res.status(404).json({
         success: false,
         message: 'Service not found',

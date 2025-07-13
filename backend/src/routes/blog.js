@@ -1,7 +1,6 @@
 import express from 'express';
-import { query } from '../database/connection.js';
+import Blog from '../database/models/Blog.js';
 import { authenticateToken, requireAdmin } from '../middleware/auth.js';
-import { validate, schemas } from '../middleware/validation.js';
 import { uploadMiddleware, processImage } from '../utils/fileUpload.js';
 import path from 'path';
 
@@ -43,37 +42,21 @@ router.get('/', async (req, res, next) => {
   try {
     const { category, status = 'published', limit = 20, offset = 0 } = req.query;
 
-    let queryText = 'SELECT * FROM blogs WHERE status = $1';
-    let queryParams = [status];
-    let paramCount = 1;
-
+    const filter = { status };
     if (category) {
-      paramCount++;
-      queryText += ` AND category = $${paramCount}`;
-      queryParams.push(category);
+      filter.category = category;
     }
 
-    queryText += ' ORDER BY created_at DESC';
-
-    if (limit) {
-      paramCount++;
-      queryText += ` LIMIT $${paramCount}`;
-      queryParams.push(parseInt(limit));
-    }
-
-    if (offset) {
-      paramCount++;
-      queryText += ` OFFSET $${paramCount}`;
-      queryParams.push(parseInt(offset));
-    }
-
-    const result = await query(queryText, queryParams);
+    const posts = await Blog.find(filter)
+      .sort({ createdAt: -1 })
+      .limit(parseInt(limit))
+      .skip(parseInt(offset));
 
     res.json({
       success: true,
       data: {
-        posts: result.rows,
-        total: result.rows.length,
+        posts,
+        total: posts.length,
       },
     });
   } catch (error) {
@@ -104,9 +87,9 @@ router.get('/:id', async (req, res, next) => {
   try {
     const { id } = req.params;
 
-    const result = await query('SELECT * FROM blogs WHERE id = $1', [id]);
+    const post = await Blog.findById(id);
 
-    if (result.rows.length === 0) {
+    if (!post) {
       return res.status(404).json({
         success: false,
         message: 'Post not found',
@@ -116,7 +99,7 @@ router.get('/:id', async (req, res, next) => {
     res.json({
       success: true,
       data: {
-        post: result.rows[0],
+        post,
       },
     });
   } catch (error) {
@@ -192,18 +175,25 @@ router.post('/',
       // Parse tags from form data
       const parsedTags = tags ? (Array.isArray(tags) ? tags : tags.split(',').map(t => t.trim())) : [];
 
-      const result = await query(
-        `INSERT INTO blogs (title, excerpt, content, image_url, author, category, tags, read_time, status)
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
-         RETURNING *`,
-        [title, excerpt, content, imageUrl, author, category, parsedTags, read_time, status]
-      );
+      const post = new Blog({
+        title,
+        excerpt,
+        content,
+        image_url: imageUrl,
+        author,
+        category,
+        tags: parsedTags,
+        read_time,
+        status
+      });
+
+      await post.save();
 
       res.status(201).json({
         success: true,
         message: 'Post created successfully',
         data: {
-          post: result.rows[0],
+          post,
         },
       });
     } catch (error) {
@@ -243,8 +233,8 @@ router.patch('/:id',
       const updates = { ...req.body };
 
       // Check if post exists
-      const existingPost = await query('SELECT * FROM blogs WHERE id = $1', [id]);
-      if (existingPost.rows.length === 0) {
+      const existingPost = await Blog.findById(id);
+      if (!existingPost) {
         return res.status(404).json({
           success: false,
           message: 'Post not found',
@@ -263,39 +253,13 @@ router.patch('/:id',
         updates.tags = updates.tags.split(',').map(t => t.trim());
       }
 
-      // Build update query
-      const updateFields = [];
-      const updateValues = [];
-      let paramCount = 0;
-
-      Object.keys(updates).forEach(key => {
-        if (updates[key] !== undefined) {
-          paramCount++;
-          updateFields.push(`${key} = $${paramCount}`);
-          updateValues.push(updates[key]);
-        }
-      });
-
-      if (updateFields.length === 0) {
-        return res.status(400).json({
-          success: false,
-          message: 'No valid fields to update',
-        });
-      }
-
-      updateFields.push(`updated_at = CURRENT_TIMESTAMP`);
-      updateValues.push(id);
-
-      const result = await query(
-        `UPDATE blogs SET ${updateFields.join(', ')} WHERE id = $${paramCount + 1} RETURNING *`,
-        updateValues
-      );
+      const post = await Blog.findByIdAndUpdate(id, updates, { new: true });
 
       res.json({
         success: true,
         message: 'Post updated successfully',
         data: {
-          post: result.rows[0],
+          post,
         },
       });
     } catch (error) {
@@ -329,9 +293,9 @@ router.delete('/:id', authenticateToken, requireAdmin, async (req, res, next) =>
   try {
     const { id } = req.params;
 
-    const result = await query('DELETE FROM blogs WHERE id = $1 RETURNING *', [id]);
+    const post = await Blog.findByIdAndDelete(id);
 
-    if (result.rows.length === 0) {
+    if (!post) {
       return res.status(404).json({
         success: false,
         message: 'Post not found',

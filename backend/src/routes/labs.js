@@ -1,7 +1,6 @@
 import express from 'express';
-import { query } from '../database/connection.js';
+import Lab from '../database/models/Lab.js';
 import { authenticateToken, requireAdmin } from '../middleware/auth.js';
-import { validate, schemas } from '../middleware/validation.js';
 import { uploadMiddleware, processImage } from '../utils/fileUpload.js';
 import path from 'path';
 
@@ -33,25 +32,18 @@ router.get('/', async (req, res, next) => {
   try {
     const { category, status = 'published' } = req.query;
 
-    let queryText = 'SELECT * FROM labs WHERE status = $1';
-    let queryParams = [status];
-    let paramCount = 1;
-
+    const filter = { status };
     if (category) {
-      paramCount++;
-      queryText += ` AND category = $${paramCount}`;
-      queryParams.push(category);
+      filter.category = category;
     }
 
-    queryText += ' ORDER BY created_at DESC';
-
-    const result = await query(queryText, queryParams);
+    const labs = await Lab.find(filter).sort({ createdAt: -1 });
 
     res.json({
       success: true,
       data: {
-        labs: result.rows,
-        total: result.rows.length,
+        labs,
+        total: labs.length,
       },
     });
   } catch (error) {
@@ -82,9 +74,9 @@ router.get('/:id', async (req, res, next) => {
   try {
     const { id } = req.params;
 
-    const result = await query('SELECT * FROM labs WHERE id = $1', [id]);
+    const lab = await Lab.findById(id);
 
-    if (result.rows.length === 0) {
+    if (!lab) {
       return res.status(404).json({
         success: false,
         message: 'Lab project not found',
@@ -94,7 +86,7 @@ router.get('/:id', async (req, res, next) => {
     res.json({
       success: true,
       data: {
-        lab: result.rows[0],
+        lab,
       },
     });
   } catch (error) {
@@ -166,18 +158,24 @@ router.post('/',
       // Parse tags from form data
       const parsedTags = tags ? (Array.isArray(tags) ? tags : tags.split(',').map(t => t.trim())) : [];
 
-      const result = await query(
-        `INSERT INTO labs (title, description, category, tags, demo_url, source_url, image_url, status)
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
-         RETURNING *`,
-        [title, description, category, parsedTags, demo_url, source_url, imageUrl, status]
-      );
+      const lab = new Lab({
+        title,
+        description,
+        category,
+        tags: parsedTags,
+        demo_url,
+        source_url,
+        image_url: imageUrl,
+        status
+      });
+
+      await lab.save();
 
       res.status(201).json({
         success: true,
         message: 'Lab project created successfully',
         data: {
-          lab: result.rows[0],
+          lab,
         },
       });
     } catch (error) {
@@ -217,8 +215,8 @@ router.patch('/:id',
       const updates = { ...req.body };
 
       // Check if lab project exists
-      const existingLab = await query('SELECT * FROM labs WHERE id = $1', [id]);
-      if (existingLab.rows.length === 0) {
+      const existingLab = await Lab.findById(id);
+      if (!existingLab) {
         return res.status(404).json({
           success: false,
           message: 'Lab project not found',
@@ -237,39 +235,13 @@ router.patch('/:id',
         updates.tags = updates.tags.split(',').map(t => t.trim());
       }
 
-      // Build update query
-      const updateFields = [];
-      const updateValues = [];
-      let paramCount = 0;
-
-      Object.keys(updates).forEach(key => {
-        if (updates[key] !== undefined) {
-          paramCount++;
-          updateFields.push(`${key} = $${paramCount}`);
-          updateValues.push(updates[key]);
-        }
-      });
-
-      if (updateFields.length === 0) {
-        return res.status(400).json({
-          success: false,
-          message: 'No valid fields to update',
-        });
-      }
-
-      updateFields.push(`updated_at = CURRENT_TIMESTAMP`);
-      updateValues.push(id);
-
-      const result = await query(
-        `UPDATE labs SET ${updateFields.join(', ')} WHERE id = $${paramCount + 1} RETURNING *`,
-        updateValues
-      );
+      const lab = await Lab.findByIdAndUpdate(id, updates, { new: true });
 
       res.json({
         success: true,
         message: 'Lab project updated successfully',
         data: {
-          lab: result.rows[0],
+          lab,
         },
       });
     } catch (error) {
@@ -303,9 +275,9 @@ router.delete('/:id', authenticateToken, requireAdmin, async (req, res, next) =>
   try {
     const { id } = req.params;
 
-    const result = await query('DELETE FROM labs WHERE id = $1 RETURNING *', [id]);
+    const lab = await Lab.findByIdAndDelete(id);
 
-    if (result.rows.length === 0) {
+    if (!lab) {
       return res.status(404).json({
         success: false,
         message: 'Lab project not found',

@@ -23,7 +23,7 @@
     "express-rate-limit": "^7.1.5",
     "morgan": "^1.10.0",
     "winston": "^3.11.0",
-    "pg": "^8.11.3",
+    "mongoose": "^8.0.3",
     "uuid": "^9.0.1",
     "sharp": "^0.32.6",
     "swagger-jsdoc": "^6.2.8",

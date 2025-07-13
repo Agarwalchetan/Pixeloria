@@ -1,5 +1,12 @@
 import express from 'express';
-import { query } from '../database/connection.js';
+import User from '../database/models/User.js';
+import Portfolio from '../database/models/Portfolio.js';
+import Blog from '../database/models/Blog.js';
+import Contact from '../database/models/Contact.js';
+import Service from '../database/models/Service.js';
+import Lab from '../database/models/Lab.js';
+import NewsletterSubscriber from '../database/models/NewsletterSubscriber.js';
+import Testimonial from '../database/models/Testimonial.js';
 import { authenticateToken, requireAdmin } from '../middleware/auth.js';
 import { validate, schemas } from '../middleware/validation.js';
 
@@ -34,56 +41,67 @@ router.get('/dashboard', authenticateToken, requireAdmin, async (req, res, next)
       recentContacts,
       recentBlogs,
     ] = await Promise.all([
-      query('SELECT COUNT(*) FROM portfolio'),
-      query('SELECT COUNT(*) FROM blogs'),
-      query('SELECT COUNT(*) FROM contacts'),
-      query('SELECT COUNT(*) FROM services'),
-      query('SELECT COUNT(*) FROM labs'),
-      query('SELECT COUNT(*) FROM users'),
-      query('SELECT COUNT(*) FROM newsletter_subscribers'),
-      query('SELECT COUNT(*) FROM testimonials'),
-      query('SELECT * FROM contacts ORDER BY created_at DESC LIMIT 5'),
-      query('SELECT * FROM blogs ORDER BY created_at DESC LIMIT 5'),
+      Portfolio.countDocuments(),
+      Blog.countDocuments(),
+      Contact.countDocuments(),
+      Service.countDocuments(),
+      Lab.countDocuments(),
+      User.countDocuments(),
+      NewsletterSubscriber.countDocuments(),
+      Testimonial.countDocuments(),
+      Contact.find().sort({ createdAt: -1 }).limit(5),
+      Blog.find().sort({ createdAt: -1 }).limit(5),
     ]);
 
     // Get monthly contact submissions
-    const monthlyContacts = await query(`
-      SELECT 
-        DATE_TRUNC('month', created_at) as month,
-        COUNT(*) as count
-      FROM contacts 
-      WHERE created_at >= NOW() - INTERVAL '12 months'
-      GROUP BY DATE_TRUNC('month', created_at)
-      ORDER BY month DESC
-    `);
+    const monthlyContacts = await Contact.aggregate([
+      {
+        $match: {
+          createdAt: { $gte: new Date(Date.now() - 12 * 30 * 24 * 60 * 60 * 1000) }
+        }
+      },
+      {
+        $group: {
+          _id: {
+            year: { $year: "$createdAt" },
+            month: { $month: "$createdAt" }
+          },
+          count: { $sum: 1 }
+        }
+      },
+      { $sort: { "_id.year": -1, "_id.month": -1 } }
+    ]);
 
     // Get contact status distribution
-    const contactStatus = await query(`
-      SELECT status, COUNT(*) as count
-      FROM contacts
-      GROUP BY status
-    `);
+    const contactStatus = await Contact.aggregate([
+      {
+        $group: {
+          _id: "$status",
+          count: { $sum: 1 }
+        }
+      }
+    ]);
 
     res.json({
       success: true,
       data: {
         statistics: {
-          portfolio: parseInt(portfolioCount.rows[0].count),
-          blogs: parseInt(blogCount.rows[0].count),
-          contacts: parseInt(contactCount.rows[0].count),
-          services: parseInt(serviceCount.rows[0].count),
-          labs: parseInt(labCount.rows[0].count),
-          users: parseInt(userCount.rows[0].count),
-          newsletter: parseInt(newsletterCount.rows[0].count),
-          testimonials: parseInt(testimonialCount.rows[0].count),
+          portfolio: portfolioCount,
+          blogs: blogCount,
+          contacts: contactCount,
+          services: serviceCount,
+          labs: labCount,
+          users: userCount,
+          newsletter: newsletterCount,
+          testimonials: testimonialCount,
         },
         charts: {
-          monthlyContacts: monthlyContacts.rows,
-          contactStatus: contactStatus.rows,
+          monthlyContacts,
+          contactStatus,
         },
         recent: {
-          contacts: recentContacts.rows,
-          blogs: recentBlogs.rows,
+          contacts: recentContacts,
+          blogs: recentBlogs,
         },
       },
     });
@@ -125,37 +143,21 @@ router.get('/contacts', authenticateToken, requireAdmin, async (req, res, next) 
   try {
     const { status, limit = 50, offset = 0 } = req.query;
 
-    let queryText = 'SELECT * FROM contacts';
-    let queryParams = [];
-    let paramCount = 0;
-
+    const filter = {};
     if (status) {
-      paramCount++;
-      queryText += ` WHERE status = $${paramCount}`;
-      queryParams.push(status);
+      filter.status = status;
     }
 
-    queryText += ' ORDER BY created_at DESC';
-
-    if (limit) {
-      paramCount++;
-      queryText += ` LIMIT $${paramCount}`;
-      queryParams.push(parseInt(limit));
-    }
-
-    if (offset) {
-      paramCount++;
-      queryText += ` OFFSET $${paramCount}`;
-      queryParams.push(parseInt(offset));
-    }
-
-    const result = await query(queryText, queryParams);
+    const contacts = await Contact.find(filter)
+      .sort({ createdAt: -1 })
+      .limit(parseInt(limit))
+      .skip(parseInt(offset));
 
     res.json({
       success: true,
       data: {
-        contacts: result.rows,
-        total: result.rows.length,
+        contacts,
+        total: contacts.length,
       },
     });
   } catch (error) {
@@ -208,12 +210,9 @@ router.patch('/contacts/:id/status', authenticateToken, requireAdmin, async (req
       });
     }
 
-    const result = await query(
-      'UPDATE contacts SET status = $1 WHERE id = $2 RETURNING *',
-      [status, id]
-    );
+    const contact = await Contact.findByIdAndUpdate(id, { status }, { new: true });
 
-    if (result.rows.length === 0) {
+    if (!contact) {
       return res.status(404).json({
         success: false,
         message: 'Contact not found',
@@ -224,7 +223,7 @@ router.patch('/contacts/:id/status', authenticateToken, requireAdmin, async (req
       success: true,
       message: 'Contact status updated successfully',
       data: {
-        contact: result.rows[0],
+        contact,
       },
     });
   } catch (error) {
@@ -246,15 +245,13 @@ router.patch('/contacts/:id/status', authenticateToken, requireAdmin, async (req
  */
 router.get('/users', authenticateToken, requireAdmin, async (req, res, next) => {
   try {
-    const result = await query(
-      'SELECT id, name, email, role, created_at, updated_at FROM users ORDER BY created_at DESC'
-    );
+    const users = await User.find().select('-password_hash').sort({ createdAt: -1 });
 
     res.json({
       success: true,
       data: {
-        users: result.rows,
-        total: result.rows.length,
+        users,
+        total: users.length,
       },
     });
   } catch (error) {
@@ -307,12 +304,9 @@ router.patch('/users/:id', authenticateToken, requireAdmin, async (req, res, nex
       });
     }
 
-    const result = await query(
-      'UPDATE users SET role = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2 RETURNING id, name, email, role, updated_at',
-      [role, id]
-    );
+    const user = await User.findByIdAndUpdate(id, { role }, { new: true }).select('-password_hash');
 
-    if (result.rows.length === 0) {
+    if (!user) {
       return res.status(404).json({
         success: false,
         message: 'User not found',
@@ -323,7 +317,7 @@ router.patch('/users/:id', authenticateToken, requireAdmin, async (req, res, nex
       success: true,
       message: 'User role updated successfully',
       data: {
-        user: result.rows[0],
+        user,
       },
     });
   } catch (error) {
@@ -345,13 +339,13 @@ router.patch('/users/:id', authenticateToken, requireAdmin, async (req, res, nex
  */
 router.get('/testimonials', authenticateToken, requireAdmin, async (req, res, next) => {
   try {
-    const result = await query('SELECT * FROM testimonials ORDER BY created_at DESC');
+    const testimonials = await Testimonial.find().sort({ createdAt: -1 });
 
     res.json({
       success: true,
       data: {
-        testimonials: result.rows,
-        total: result.rows.length,
+        testimonials,
+        total: testimonials.length,
       },
     });
   } catch (error) {
@@ -424,18 +418,27 @@ router.post('/testimonials', authenticateToken, requireAdmin, validate(schemas.t
       status = 'published'
     } = req.body;
 
-    const result = await query(
-      `INSERT INTO testimonials (name, role, company, industry, image_url, quote, full_quote, rating, project_type, results, status)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
-       RETURNING *`,
-      [name, role, company, industry, image_url, quote, full_quote, rating, project_type, results, status]
-    );
+    const testimonial = new Testimonial({
+      name,
+      role,
+      company,
+      industry,
+      image_url,
+      quote,
+      full_quote,
+      rating,
+      project_type,
+      results,
+      status
+    });
+
+    await testimonial.save();
 
     res.status(201).json({
       success: true,
       message: 'Testimonial created successfully',
       data: {
-        testimonial: result.rows[0],
+        testimonial,
       },
     });
   } catch (error) {
@@ -457,13 +460,13 @@ router.post('/testimonials', authenticateToken, requireAdmin, validate(schemas.t
  */
 router.get('/newsletter', authenticateToken, requireAdmin, async (req, res, next) => {
   try {
-    const result = await query('SELECT * FROM newsletter_subscribers ORDER BY subscription_date DESC');
+    const subscribers = await NewsletterSubscriber.find().sort({ subscription_date: -1 });
 
     res.json({
       success: true,
       data: {
-        subscribers: result.rows,
-        total: result.rows.length,
+        subscribers,
+        total: subscribers.length,
       },
     });
   } catch (error) {
