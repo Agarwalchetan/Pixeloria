@@ -1,27 +1,91 @@
-# Frontend-specific configs to ignore
+# 🔐 Environment Files
+.env
+.env.local
+.env.production
+.env.development
+.env.example
+backend/.env
+backend/.env.example
+
+# 📦 Lock Files
+package-lock.json
+pnpm-lock.yaml
+yarn.lock
+backend/package-lock.json
+
+# ⚙️ Configuration & Build Tools
+tsconfig.json
+tsconfig.node.json
+tsconfig.app.json
 vite.config.ts
 postcss.config.js
 tailwind.config.js
-tsconfig.app.json
-tsconfig.node.json
-tsconfig.json
 eslint.config.js
 
-# Build/cache folders (if generated)
-node_modules/*
-dist/*
-build/*
-.next/*
-.cache/*
-.vscode/*
-
-
-
-# System files
-.DS_Store
-.env
+# 🧪 Logs & Cache
 *.log
-*.zip
+*.tmp
+*.cache
+backend/logs/combined.log
+backend/logs/error.log
 
-# Git stuff
-.git/*
+# 🛠️ Dev Tools & Metadata
+.vscode/
+.DS_Store
+Thumbs.db
+.editorconfig
+.browserslistrc
+render.yaml
+.netlify/
+.vercel/
+
+# 🚫 Build Artifacts
+dist/index.html
+dist/assets/index-*.js
+dist/assets/index-*.css
+
+# 📁 Unused Frontend Components
+src/components/CursorTrail.tsx
+src/components/FloatingElements.tsx
+src/components/ParticleBackground.tsx
+src/components/ChatWidget.tsx
+src/components/SectionHeader.tsx
+src/components/ThemeToggle.tsx
+src/components/Hero.tsx
+
+# 📁 Frontend Experimental/Labs Pages (Not needed for current scope)
+src/pages/Labs.tsx
+src/pages/NotFound.tsx
+src/pages/labs/ABTesting.tsx
+src/pages/labs/AnimationComposer.tsx
+src/pages/labs/AnimationTester.tsx
+src/pages/labs/CodePlayground.tsx
+src/pages/labs/ColorGenerator.tsx
+src/pages/labs/ComponentStore.tsx
+src/pages/labs/NeuralNetworkViz.tsx
+
+# 🔄 Mock/Test Data & Placeholder
+src/data/
+src/tests/
+__mocks__/
+__tests__/
+
+# 📄 Docs
+README.md
+backend/README.md
+
+# 📉 Backend: Database/Dev Scripts Not Needed in Prod
+backend/src/database/migrate.js
+
+# 🧪 Backend: Example/test models or seeders (remove if unused)
+# (Comment out if you're using them!)
+# backend/src/database/models/ExampleModel.js
+# backend/src/database/seeders/
+
+# 🚫 Future Feature Routes (Not yet used)
+# (Uncomment only when you're using them)
+# backend/src/routes/admin.js   # if admin panel not live
+# backend/src/routes/auth.js    # if auth not integrated
+
+# 🚧 Optional: Git Ignore Matching (optional)
+.git/
