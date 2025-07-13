@@ -15,7 +15,18 @@ build/*
 .cache/*
 .vscode/*
 
-
+# Frontend assets/components
+src/*
+public/*
+*.css
+*.tsx
+*.ts
+*.jsx
+*.png
+*.jpg
+*.jpeg
+*.svg
+*.mp4
 
 # System files
 .DS_Store
