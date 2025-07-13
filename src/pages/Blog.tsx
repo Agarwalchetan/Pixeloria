@@ -1,51 +1,54 @@
 import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { useInView } from 'react-intersection-observer';
 import SectionHeader from '../components/SectionHeader';
 import { Search, Calendar, User, ArrowRight, Star, TrendingUp, BookOpen } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { blogApi } from '../utils/api';
 
-const featuredPost = {
-  id: 0,
+// Fallback data for when API is not available
+const fallbackFeaturedPost = {
+  _id: "fallback-0",
   title: "The Future of Web Development: AI, WebAssembly, and Edge Computing",
   excerpt: "Explore how emerging technologies are reshaping the web development landscape in 2025. From AI-powered development tools to edge computing solutions, discover what's next in tech.",
-  image: "https://images.pexels.com/photos/8728285/pexels-photo-8728285.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=2",
+  image_url: "https://images.pexels.com/photos/8728285/pexels-photo-8728285.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=2",
   author: "Sarah Johnson",
-  date: "March 20, 2025",
+  createdAt: "2025-03-20T00:00:00.000Z",
   category: "Tech Trends",
-  readTime: "8 min read"
+  read_time: 8
 };
 
-const blogPosts = [
+const fallbackBlogPosts = [
   {
-    id: 1,
+    _id: "fallback-1",
     title: "Building Scalable Web Apps in 2025",
     excerpt: "Explore the frontend and backend practices powering the next-gen web, from microservices to edge computing.",
-    image: "https://images.pexels.com/photos/196644/pexels-photo-196644.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=2",
+    image_url: "https://images.pexels.com/photos/196644/pexels-photo-196644.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=2",
     author: "Sarah Johnson",
-    date: "March 15, 2025",
+    createdAt: "2025-03-15T00:00:00.000Z",
     category: "Web Development",
-    readTime: "6 min read"
+    read_time: 6
   },
   {
-    id: 2,
+    _id: "fallback-2",
     title: "The Future of UI/UX: AI-Driven Design",
     excerpt: "Discover how artificial intelligence is revolutionizing the way we approach user interface and experience design.",
-    image: "https://images.pexels.com/photos/1181671/pexels-photo-1181671.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=2",
+    image_url: "https://images.pexels.com/photos/1181671/pexels-photo-1181671.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=2",
     author: "Mike Chen",
-    date: "March 10, 2025",
+    createdAt: "2025-03-10T00:00:00.000Z",
     category: "UI/UX",
-    readTime: "5 min read"
+    read_time: 5
   },
   {
-    id: 3,
+    _id: "fallback-3",
     title: "Optimizing eCommerce Performance",
     excerpt: "Learn the latest techniques for building high-performance online stores that convert visitors into customers.",
-    image: "https://images.pexels.com/photos/230544/pexels-photo-230544.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=2",
+    image_url: "https://images.pexels.com/photos/230544/pexels-photo-230544.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=2",
     author: "Alex Rodriguez",
-    date: "March 5, 2025",
+    createdAt: "2025-03-05T00:00:00.000Z",
     category: "eCommerce",
-    readTime: "7 min read"
+    read_time: 7
   }
 ];
 
@@ -61,17 +64,94 @@ const categories = [
 
 const Blog: React.FC = () => {
   const [selectedCategory, setSelectedCategory] = useState("All");
+  const [blogPosts, setBlogPosts] = useState<any[]>([]);
+  const [featuredPost, setFeaturedPost] = useState<any>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [ref, inView] = useInView({
     triggerOnce: true,
     threshold: 0.1,
   });
 
+  // Fetch blog posts from API
+  useEffect(() => {
+    const fetchBlogPosts = async () => {
+      try {
+        setIsLoading(true);
+        setError(null);
+        
+        const response = await blogApi.getAll({ limit: 10 });
+        
+        if (response.success && response.data) {
+          const posts = response.data.posts || [];
+          setBlogPosts(posts);
+          
+          // Set the first post as featured, or use fallback
+          if (posts.length > 0) {
+            setFeaturedPost(posts[0]);
+          } else {
+            setFeaturedPost(fallbackFeaturedPost);
+          }
+        } else {
+          throw new Error('Failed to fetch blog posts');
+        }
+      } catch (err) {
+        console.error('Error fetching blog posts:', err);
+        setError(err instanceof Error ? err.message : 'Failed to load blog posts');
+        
+        // Use fallback data
+        setBlogPosts(fallbackBlogPosts);
+        setFeaturedPost(fallbackFeaturedPost);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchBlogPosts();
+  }, []);
+
+  // Helper function to format date
+  const formatDate = (dateString: string) => {
+    try {
+      return new Date(dateString).toLocaleDateString('en-US', {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric'
+      });
+    } catch {
+      return dateString;
+    }
+  };
+
   const filteredPosts = selectedCategory === "All" 
     ? blogPosts 
     : blogPosts.filter(post => post.category === selectedCategory);
 
+  // Loading state
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-gray-900 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-400 mx-auto mb-4"></div>
+          <p className="text-gray-300">Loading blog posts...</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-gray-900">
+      {/* Error Banner */}
+      {error && (
+        <div className="bg-yellow-600/20 border-l-4 border-yellow-400 p-4">
+          <div className="container-custom">
+            <p className="text-yellow-200 text-sm">
+              <strong>Notice:</strong> {error}. Showing sample content.
+            </p>
+          </div>
+        </div>
+      )}
+
       {/* Hero Section */}
       <section className="relative py-20 overflow-hidden">
         <div className="absolute inset-0 bg-gradient-to-b from-blue-600/20 to-purple-600/20"></div>
@@ -106,58 +186,60 @@ const Blog: React.FC = () => {
       {/* Featured Post */}
       <section className="py-12">
         <div className="container-custom">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6 }}
-            className="bg-gradient-to-r from-blue-900/50 to-purple-900/50 rounded-2xl overflow-hidden shadow-xl"
-          >
-            <div className="grid md:grid-cols-2 gap-8">
-              <div className="relative aspect-video md:aspect-auto">
-                <img
-                  src={featuredPost.image}
-                  alt={featuredPost.title}
-                  className="absolute inset-0 w-full h-full object-cover"
-                />
-                <div className="absolute inset-0 bg-gradient-to-r from-gray-900 via-gray-900/50 to-transparent md:hidden"></div>
-              </div>
-              <div className="p-8 flex flex-col justify-center">
-                <div className="flex items-center space-x-2 mb-4">
-                  <Star className="text-yellow-500" size={20} />
-                  <span className="text-yellow-500 font-medium">Featured Post</span>
+          {featuredPost && (
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.6 }}
+              className="bg-gradient-to-r from-blue-900/50 to-purple-900/50 rounded-2xl overflow-hidden shadow-xl"
+            >
+              <div className="grid md:grid-cols-2 gap-8">
+                <div className="relative aspect-video md:aspect-auto">
+                  <img
+                    src={featuredPost.image_url || featuredPost.image || 'https://images.pexels.com/photos/8728285/pexels-photo-8728285.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=2'}
+                    alt={featuredPost.title}
+                    className="absolute inset-0 w-full h-full object-cover"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-r from-gray-900 via-gray-900/50 to-transparent md:hidden"></div>
                 </div>
-                <h2 className="text-2xl md:text-3xl font-bold mb-4 text-white">
-                  {featuredPost.title}
-                </h2>
-                <p className="text-gray-300 mb-6">
-                  {featuredPost.excerpt}
-                </p>
-                <div className="flex items-center justify-between mb-6">
-                  <div className="flex items-center space-x-4 text-sm text-gray-400">
-                    <span className="flex items-center">
-                      <User size={16} className="mr-1" />
-                      {featuredPost.author}
-                    </span>
-                    <span className="flex items-center">
-                      <Calendar size={16} className="mr-1" />
-                      {featuredPost.date}
-                    </span>
-                    <span className="flex items-center">
-                      <BookOpen size={16} className="mr-1" />
-                      {featuredPost.readTime}
-                    </span>
+                <div className="p-8 flex flex-col justify-center">
+                  <div className="flex items-center space-x-2 mb-4">
+                    <Star className="text-yellow-500" size={20} />
+                    <span className="text-yellow-500 font-medium">Featured Post</span>
                   </div>
+                  <h2 className="text-2xl md:text-3xl font-bold mb-4 text-white">
+                    {featuredPost.title}
+                  </h2>
+                  <p className="text-gray-300 mb-6">
+                    {featuredPost.excerpt}
+                  </p>
+                  <div className="flex items-center justify-between mb-6">
+                    <div className="flex items-center space-x-4 text-sm text-gray-400">
+                      <span className="flex items-center">
+                        <User size={16} className="mr-1" />
+                        {featuredPost.author}
+                      </span>
+                      <span className="flex items-center">
+                        <Calendar size={16} className="mr-1" />
+                        {formatDate(featuredPost.createdAt || featuredPost.date)}
+                      </span>
+                      <span className="flex items-center">
+                        <BookOpen size={16} className="mr-1" />
+                        {featuredPost.read_time || featuredPost.readTime} min read
+                      </span>
+                    </div>
+                  </div>
+                  <Link
+                    to={`/blog/${featuredPost._id || featuredPost.id}`}
+                    className="inline-flex items-center btn-primary group"
+                  >
+                    Read Article
+                    <ArrowRight className="ml-2 group-hover:translate-x-1 transition-transform" size={20} />
+                  </Link>
                 </div>
-                <Link
-                  to={`/blog/${featuredPost.id}`}
-                  className="inline-flex items-center btn-primary group"
-                >
-                  Read Article
-                  <ArrowRight className="ml-2 group-hover:translate-x-1 transition-transform" size={20} />
-                </Link>
               </div>
-            </div>
-          </motion.div>
+            </motion.div>
+          )}
         </div>
       </section>
 
@@ -202,9 +284,9 @@ const Blog: React.FC = () => {
 
               {/* Blog Posts */}
               <div className="space-y-8">
-                {filteredPosts.map((post, index) => (
+                {filteredPosts.length > 0 ? filteredPosts.map((post, index) => (
                   <motion.article
-                    key={post.id}
+                    key={post._id || post.id}
                     ref={ref}
                     initial={{ opacity: 0, y: 20 }}
                     animate={inView ? { opacity: 1, y: 0 } : { opacity: 0, y: 20 }}
@@ -214,7 +296,7 @@ const Blog: React.FC = () => {
                     <div className="md:flex">
                       <div className="md:w-1/3">
                         <img
-                          src={post.image}
+                          src={post.image_url || post.image || 'https://images.pexels.com/photos/196644/pexels-photo-196644.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=2'}
                           alt={post.title}
                           className="h-48 w-full object-cover md:h-full transform group-hover:scale-110 transition-transform duration-500"
                         />
@@ -237,15 +319,15 @@ const Blog: React.FC = () => {
                             </span>
                             <span className="flex items-center">
                               <Calendar size={16} className="mr-1" />
-                              {post.date}
+                              {formatDate(post.createdAt || post.date)}
                             </span>
                             <span className="flex items-center">
                               <BookOpen size={16} className="mr-1" />
-                              {post.readTime}
+                              {post.read_time || post.readTime} min read
                             </span>
                           </div>
                           <Link
-                            to={`/blog/${post.id}`}
+                            to={`/blog/${post._id || post.id}`}
                             className="text-blue-400 hover:text-blue-300 font-medium flex items-center group/link"
                           >
                             Read More
@@ -255,7 +337,11 @@ const Blog: React.FC = () => {
                       </div>
                     </div>
                   </motion.article>
-                ))}
+                )) : (
+                  <div className="text-center py-12">
+                    <p className="text-gray-400 text-lg">No blog posts found for the selected category.</p>
+                  </div>
+                )}
               </div>
 
               {/* Load More Button */}
