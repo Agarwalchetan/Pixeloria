@@ -74,18 +74,7 @@ __tests__/
 README.md
 backend/README.md
 
-# 📉 Backend: Database/Dev Scripts Not Needed in Prod
-backend/src/database/migrate.js
 
-# 🧪 Backend: Example/test models or seeders (remove if unused)
-# (Comment out if you're using them!)
-# backend/src/database/models/ExampleModel.js
-# backend/src/database/seeders/
-
-# 🚫 Future Feature Routes (Not yet used)
-# (Uncomment only when you're using them)
-# backend/src/routes/admin.js   # if admin panel not live
-# backend/src/routes/auth.js    # if auth not integrated
 
 # 🚧 Optional: Git Ignore Matching (optional)
 .git/
