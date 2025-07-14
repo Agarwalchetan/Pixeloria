@@ -1,10 +1,11 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import Hero from '../components/Hero';
 import SectionHeader from '../components/SectionHeader';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useInView } from 'react-intersection-observer';
 import { ExternalLink, ArrowRight } from 'lucide-react';
+import { portfolioApi } from '../utils/api';
 
 interface Project {
   id: number;
@@ -17,7 +18,8 @@ interface Project {
   results: string[];
 }
 
-const projects: Project[] = [
+// Fallback projects for when API is not available
+const fallbackProjects: Project[] = [
   {
     id: 1,
     title: "E-Commerce Platform",
@@ -82,6 +84,10 @@ const projects: Project[] = [
 
 const Portfolio: React.FC = () => {
   const [selectedCategory, setSelectedCategory] = useState<string>('All');
+  const [projects, setProjects] = useState<Project[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  
   const categories = ['All', ...new Set(projects.map(project => project.category))];
   
   const filteredProjects = selectedCategory === 'All' 
@@ -93,8 +99,73 @@ const Portfolio: React.FC = () => {
     threshold: 0.1,
   });
 
+  // Fetch projects from API
+  useEffect(() => {
+    const fetchProjects = async () => {
+      try {
+        setIsLoading(true);
+        setError(null);
+        
+        const response = await portfolioApi.getAll({ limit: 50 });
+        
+        if (response.success && response.data) {
+          const apiProjects = response.data.projects || [];
+          
+          // Map API response to component interface
+          const mappedProjects: Project[] = apiProjects.map((project: any, index: number) => ({
+            id: index + 1, // Generate numeric ID
+            title: project.title || 'Untitled Project',
+            description: project.description || 'No description available',
+            image: project.images?.[0] || 'https://images.pexels.com/photos/265087/pexels-photo-265087.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=2',
+            category: project.category || 'Web Application',
+            link: project.link || '#',
+            techStack: project.tech_stack || ['React', 'Node.js'],
+            results: project.results || ['Great results achieved']
+          }));
+          
+          setProjects(mappedProjects);
+        } else {
+          throw new Error('Failed to fetch portfolio projects');
+        }
+      } catch (err) {
+        console.error('Error fetching portfolio projects:', err);
+        setError(err instanceof Error ? err.message : 'Failed to load portfolio projects');
+        
+        // Use fallback data
+        setProjects(fallbackProjects);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchProjects();
+  }, []);
+
+  // Loading state
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-gray-900 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-400 mx-auto mb-4"></div>
+          <p className="text-gray-300">Loading portfolio projects...</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="bg-gray-900">
+      {/* Error Banner */}
+      {error && (
+        <div className="bg-yellow-600/20 border-l-4 border-yellow-400 p-4">
+          <div className="container-custom">
+            <p className="text-yellow-200 text-sm">
+              <strong>Notice:</strong> {error}. Showing sample content.
+            </p>
+          </div>
+        </div>
+      )}
+
       <Hero
         title="Our Work Speaks Louder Than Words"
         subtitle="Explore some of the projects we've built — from sleek business websites to complex web apps."
