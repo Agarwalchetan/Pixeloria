@@ -1,8 +1,7 @@
 #What to do
 
-1.) Go ahead with frontend -backend connection
-2.) 🚀 Next Steps:
-Portfolio.tsx - Replace mock projects with API calls
-Contact.tsx - Implement form submission to backend
-Services.tsx - Fetch services from API
-Home.tsx - Update with real data
+1.) Go ahead with frontend -backend connection   <br/>
+2.) 🚀 Next Steps: <br/>
+      Services.tsx - Fetch services from API<br/>
+      Home.tsx - Update with real data<br/>
+3.) Admin Portal
