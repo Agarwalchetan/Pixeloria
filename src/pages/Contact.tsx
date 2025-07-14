@@ -6,6 +6,7 @@ import { Mail, Phone, MapPin, Calendar, Clock, Send, Upload, Linkedin, Twitter, 
 import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
+import { contactApi } from '../utils/api';
 
 // Fix Leaflet default marker icon issue
 delete (L.Icon.Default.prototype as any)._getIconUrl;
@@ -30,6 +31,7 @@ const Contact: React.FC = () => {
   const [file, setFile] = useState<File | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitStatus, setSubmitStatus] = useState<'idle' | 'success' | 'error'>('idle');
+  const [errorMessage, setErrorMessage] = useState<string>('');
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
@@ -45,24 +47,44 @@ const Contact: React.FC = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
+    setSubmitStatus('idle');
+    setErrorMessage('');
     
-    // Simulate form submission
-    setTimeout(() => {
+    try {
+      // Submit form data to backend
+      const response = await contactApi.submit(formData, file || undefined);
+      
+      if (response.success) {
+        setSubmitStatus('success');
+        // Reset form after success
+        setFormData({
+          firstName: '',
+          lastName: '',
+          email: '',
+          company: '',
+          phone: '',
+          projectType: '',
+          budget: '',
+          message: ''
+        });
+        setFile(null);
+        
+        // Reset file input
+        const fileInput = document.getElementById('file-upload') as HTMLInputElement;
+        if (fileInput) {
+          fileInput.value = '';
+        }
+      } else {
+        throw new Error(response.message || 'Failed to submit form');
+      }
+    } catch (error) {
       setIsSubmitting(false);
-      setSubmitStatus('success');
-      // Reset form after success
-      setFormData({
-        firstName: '',
-        lastName: '',
-        email: '',
-        company: '',
-        phone: '',
-        projectType: '',
-        budget: '',
-        message: ''
-      });
-      setFile(null);
-    }, 1500);
+      setSubmitStatus('error');
+      setErrorMessage(error instanceof Error ? error.message : 'An unexpected error occurred');
+      console.error('Contact form submission error:', error);
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const [ref, inView] = useInView({
@@ -328,13 +350,13 @@ const Contact: React.FC = () => {
 
                 {submitStatus === 'success' && (
                   <div className="text-green-400 text-sm mt-2">
-                    Message sent successfully! We'll get back to you soon.
+                    ✅ Message sent successfully! We'll get back to you within 24 hours.
                   </div>
                 )}
 
                 {submitStatus === 'error' && (
                   <div className="text-red-400 text-sm mt-2">
-                    There was an error sending your message. Please try again.
+                    ❌ {errorMessage || 'There was an error sending your message. Please try again.'}
                   </div>
                 )}
               </form>
