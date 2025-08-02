@@ -8,6 +8,7 @@ import {
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import ProjectCalculator from '../components/ProjectCalculator';
+import { servicesApi } from '../utils/api';
 
 interface Service {
   id: string;
@@ -34,6 +35,9 @@ const Services: React.FC = () => {
   const [selectedTechCategory, setSelectedTechCategory] = useState('Frontend');
   const [faqSearch, setFaqSearch] = useState('');
   const [expandedFaq, setExpandedFaq] = useState<number | null>(null);
+  const [apiServices, setApiServices] = useState<any[]>([]);
+  const [isLoadingServices, setIsLoadingServices] = useState(true);
+  const [servicesError, setServicesError] = useState<string | null>(null);
   
   const heroRef = useRef(null);
   const { scrollYProgress } = useScroll({
@@ -299,10 +303,46 @@ const Services: React.FC = () => {
     faq.tags.some(tag => tag.toLowerCase().includes(faqSearch.toLowerCase()))
   );
 
+  // Fetch services from API
+  useEffect(() => {
+    const fetchServices = async () => {
+      try {
+        setIsLoadingServices(true);
+        setServicesError(null);
+        
+        const response = await servicesApi.getAll();
+        
+        if (response.success && response.data) {
+          setApiServices(response.data.services || []);
+        } else {
+          throw new Error('Failed to fetch services');
+        }
+      } catch (err) {
+        console.error('Error fetching services:', err);
+        setServicesError(err instanceof Error ? err.message : 'Failed to load services');
+      } finally {
+        setIsLoadingServices(false);
+      }
+    };
+
+    fetchServices();
+  }, []);
+
   const selectedServiceData = services.find(s => s.id === selectedService);
 
   return (
     <div className="bg-gray-900 overflow-hidden">
+      {/* Services Error Banner */}
+      {servicesError && (
+        <div className="bg-yellow-600/20 border-l-4 border-yellow-400 p-4">
+          <div className="container-custom">
+            <p className="text-yellow-200 text-sm">
+              <strong>Notice:</strong> {servicesError}. Showing sample content.
+            </p>
+          </div>
+        </div>
+      )}
+
       {/* SECTION 1: Hero - Bold First Impression */}
       <section ref={heroRef} className="relative min-h-screen flex items-center overflow-hidden">
         {/* Animated Background */}
@@ -423,6 +463,11 @@ const Services: React.FC = () => {
                 <div className="absolute inset-0 bg-gradient-to-r from-blue-600 to-purple-600 group-hover:scale-110 transition-transform duration-500"></div>
               </a>
             </motion.div>
+            {!isLoadingServices && apiServices.length > 0 && (
+              <span className="block mt-2 text-sm text-blue-400">
+                {apiServices.length} services available from our API
+              </span>
+            )}
           </div>
         </motion.div>
       </section>
