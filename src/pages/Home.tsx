@@ -9,6 +9,7 @@ import {
 } from 'lucide-react';
 import { motion, AnimatePresence, useInView, useMotionValue, useTransform } from 'framer-motion';
 import { Link } from 'react-router-dom';
+import { portfolioApi, servicesApi } from '../utils/api';
 
 const Home: React.FC = () => {
   // Interactive Services State
@@ -27,6 +28,12 @@ const Home: React.FC = () => {
   const [countsStarted, setCountsStarted] = useState(false);
   const statsRef = useRef(null);
   const statsInView = useInView(statsRef, { once: true });
+  
+  // API Data State
+  const [apiProjects, setApiProjects] = useState<any[]>([]);
+  const [apiServices, setApiServices] = useState<any[]>([]);
+  const [isLoadingData, setIsLoadingData] = useState(true);
+  const [dataError, setDataError] = useState<string | null>(null);
 
   const services = [
     {
@@ -327,6 +334,36 @@ const Home: React.FC = () => {
     return () => clearInterval(interval);
   }, []);
 
+  // Fetch data from API
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        setIsLoadingData(true);
+        setDataError(null);
+        
+        const [portfolioResponse, servicesResponse] = await Promise.all([
+          portfolioApi.getAll({ limit: 4 }),
+          servicesApi.getAll()
+        ]);
+        
+        if (portfolioResponse.success && portfolioResponse.data) {
+          setApiProjects(portfolioResponse.data.projects || []);
+        }
+        
+        if (servicesResponse.success && servicesResponse.data) {
+          setApiServices(servicesResponse.data.services || []);
+        }
+      } catch (err) {
+        console.error('Error fetching data:', err);
+        setDataError(err instanceof Error ? err.message : 'Failed to load data');
+      } finally {
+        setIsLoadingData(false);
+      }
+    };
+
+    fetchData();
+  }, []);
+
   const filteredProjects = projectFilter === 'All' 
     ? featuredProjects 
     : featuredProjects.filter(project => project.category === projectFilter);
@@ -337,6 +374,17 @@ const Home: React.FC = () => {
 
   return (
     <>
+      {/* Data Error Banner */}
+      {dataError && (
+        <div className="bg-yellow-600/20 border-l-4 border-yellow-400 p-4">
+          <div className="container-custom">
+            <p className="text-yellow-200 text-sm">
+              <strong>Notice:</strong> {dataError}. Showing sample content.
+            </p>
+          </div>
+        </div>
+      )}
+
       <Hero
         title="Crafting Digital Experiences That Grow Your Business"
         subtitle="We build beautiful, responsive websites that help businesses thrive in the digital world."
@@ -353,6 +401,14 @@ const Home: React.FC = () => {
             title="Our Expertise"
             subtitle="Interactive solutions tailored to your business needs. Explore our core services and discover how we can help you succeed."
           />
+          
+          {!isLoadingData && apiServices.length > 0 && (
+            <div className="text-center mb-8">
+              <p className="text-blue-600 text-sm font-medium">
+                ✨ {apiServices.length} services loaded from our API
+              </p>
+            </div>
+          )}
           
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
             {services.map((service, index) => (
@@ -499,6 +555,14 @@ const Home: React.FC = () => {
               subtitle="Explore our featured projects and the results we've achieved for our clients."
               centered={false}
             />
+            
+            {!isLoadingData && apiProjects.length > 0 && (
+              <div className="text-center mb-8">
+                <p className="text-blue-600 text-sm font-medium">
+                  ✨ {apiProjects.length} projects loaded from our API
+                </p>
+              </div>
+            )}
             
             <div className="flex items-center space-x-4">
               <div className="flex items-center space-x-2">
