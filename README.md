@@ -3,4 +3,6 @@
 1.) Go ahead with frontend -backend connection   <br/>
 2.) 🚀 Next Steps: <br/>
       Calculator<br/>
-3.) Admin Portal
+3.) Admin Portal :- Every page of it and also <br/>
+    Every connection 
+
