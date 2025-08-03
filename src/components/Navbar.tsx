@@ -10,6 +10,7 @@ import {
   Sparkles,
   Zap,
   Star,
+  Shield,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 
@@ -503,6 +504,19 @@ const Navbar: React.FC<NavbarProps> = ({ isScrolled }) => {
                 whileTap={{ scale: 0.98 }}
               >
                 <NavLink
+                  to="/admin/login"
+                  className="relative flex items-center px-4 py-2 rounded-xl bg-gradient-to-r from-gray-600 to-gray-700 text-white font-semibold hover:from-gray-700 hover:to-gray-800 transition-all duration-200 shadow-lg shadow-gray-500/25 hover:shadow-gray-500/40 group overflow-hidden"
+                >
+                  <Shield size={16} className="mr-2" />
+                  Admin
+                </NavLink>
+              </motion.div>
+
+              <motion.div
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+              >
+                <NavLink
                   to="/cost-estimator"
                   className="relative flex items-center px-4 py-2 rounded-xl bg-gradient-to-r from-green-500 to-emerald-500 text-white font-semibold hover:from-green-600 hover:to-emerald-600 transition-all duration-200 shadow-lg shadow-green-500/25 hover:shadow-green-500/40 group overflow-hidden"
                 >
@@ -673,6 +687,14 @@ const Navbar: React.FC<NavbarProps> = ({ isScrolled }) => {
                     transition={{ delay: 0.4 }}
                     className="pt-4 border-t border-gray-800/50 space-y-3"
                   >
+                    <NavLink
+                      to="/admin/login"
+                      className="flex items-center justify-center py-3 px-4 rounded-xl bg-gradient-to-r from-gray-600 to-gray-700 text-white font-semibold shadow-lg"
+                      onClick={closeMenu}
+                    >
+                      <Shield size={16} className="mr-2" />
+                      Admin Portal
+                    </NavLink>
                     <NavLink
                       to="/cost-estimator"
                       className="flex items-center justify-center py-3 px-4 rounded-xl bg-gradient-to-r from-green-500 to-emerald-500 text-white font-semibold shadow-lg"

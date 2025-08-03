@@ -11,6 +11,10 @@ import Labs from './pages/Labs';
 import CostEstimator from './pages/CostEstimator';
 import NotFound from './pages/NotFound';
 
+// Admin Components
+import AdminLogin from './pages/AdminLogin';
+import AdminDashboard from './pages/AdminDashboard';
+
 // Lab Tools
 import ColorGenerator from './pages/labs/ColorGenerator';
 import AnimationTester from './pages/labs/AnimationTester';
@@ -34,6 +38,10 @@ function App() {
         <Route path="*" element={<NotFound />} />
       </Route>
       <Route path="/cost-estimator" element={<CostEstimator />} />
+      
+      {/* Admin Routes */}
+      <Route path="/admin/login" element={<AdminLogin />} />
+      <Route path="/admin/dashboard" element={<AdminDashboard />} />
       
       {/* Lab Tools Routes */}
       <Route path="/labs/color-generator" element={<ColorGenerator />} />
