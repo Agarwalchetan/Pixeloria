@@ -1,26 +1,9 @@
 
 
-# 📦 Lock Files
-package-lock.json
-pnpm-lock.yaml
-yarn.lock
-backend/package-lock.json
-
-# ⚙️ Configuration & Build Tools
-tsconfig.json
-tsconfig.node.json
-tsconfig.app.json
-vite.config.ts
-postcss.config.js
-tailwind.config.js
-eslint.config.js
-
 # 🧪 Logs & Cache
 *.log
 *.tmp
 *.cache
-backend/logs/combined.log
-backend/logs/error.log
 
 # 🛠️ Dev Tools & Metadata
 .vscode/
@@ -44,7 +27,6 @@ src/components/ParticleBackground.tsx
 src/components/ChatWidget.tsx
 src/components/SectionHeader.tsx
 src/components/ThemeToggle.tsx
-src/components/Hero.tsx
 
 # 📁 Frontend Experimental/Labs Pages (Not needed for current scope)
 src/pages/Labs.tsx
