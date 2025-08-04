@@ -280,31 +280,34 @@ router.get('/users', authenticateToken, requireAdmin, async (req, res, next) => 
  *         application/json:
  *           schema:
  *             type: object
- *             required:
- *               - role
  *             properties:
+ *               name:
+ *                 type: string
+ *               email:
+ *                 type: string
  *               role:
  *                 type: string
  *                 enum: [admin, client, guest]
  *     responses:
  *       200:
- *         description: User role updated successfully
+ *         description: User updated successfully
  *       404:
  *         description: User not found
  */
 router.patch('/users/:id', authenticateToken, requireAdmin, async (req, res, next) => {
   try {
     const { id } = req.params;
-    const { role } = req.body;
+    const updates = req.body;
 
-    if (!['admin', 'client', 'guest'].includes(role)) {
+    // Validate role if provided
+    if (updates.role && !['admin', 'client', 'guest'].includes(updates.role)) {
       return res.status(400).json({
         success: false,
         message: 'Invalid role. Must be one of: admin, client, guest',
       });
     }
 
-    const user = await User.findByIdAndUpdate(id, { role }, { new: true }).select('-password_hash');
+    const user = await User.findByIdAndUpdate(id, updates, { new: true }).select('-password_hash');
 
     if (!user) {
       return res.status(404).json({
@@ -315,10 +318,63 @@ router.patch('/users/:id', authenticateToken, requireAdmin, async (req, res, nex
 
     res.json({
       success: true,
-      message: 'User role updated successfully',
+      message: 'User updated successfully',
       data: {
         user,
       },
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
+/**
+ * @swagger
+ * /api/admin/users/{id}:
+ *   delete:
+ *     summary: Delete user (admin only)
+ *     tags: [Admin]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: User ID
+ *     responses:
+ *       200:
+ *         description: User deleted successfully
+ *       404:
+ *         description: User not found
+ *       403:
+ *         description: Cannot delete yourself
+ */
+router.delete('/users/:id', authenticateToken, requireAdmin, async (req, res, next) => {
+  try {
+    const { id } = req.params;
+
+    // Prevent admin from deleting themselves
+    if (req.user._id.toString() === id) {
+      return res.status(403).json({
+        success: false,
+        message: 'You cannot delete your own account',
+      });
+    }
+
+    const user = await User.findByIdAndDelete(id);
+
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: 'User not found',
+      });
+    }
+
+    res.json({
+      success: true,
+      message: 'User deleted successfully',
     });
   } catch (error) {
     next(error);
@@ -467,6 +523,84 @@ router.get('/newsletter', authenticateToken, requireAdmin, async (req, res, next
       data: {
         subscribers,
         total: subscribers.length,
+      },
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
+/**
+ * @swagger
+ * /api/admin/bulk-delete:
+ *   post:
+ *     summary: Bulk delete items
+ *     tags: [Admin]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - type
+ *               - ids
+ *             properties:
+ *               type:
+ *                 type: string
+ *                 enum: [blogs, portfolio, services, labs, contacts]
+ *               ids:
+ *                 type: array
+ *                 items:
+ *                   type: string
+ *     responses:
+ *       200:
+ *         description: Items deleted successfully
+ */
+router.post('/bulk-delete', authenticateToken, requireAdmin, async (req, res, next) => {
+  try {
+    const { type, ids } = req.body;
+
+    if (!type || !ids || !Array.isArray(ids)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Type and ids array are required',
+      });
+    }
+
+    let Model;
+    switch (type) {
+      case 'blogs':
+        Model = Blog;
+        break;
+      case 'portfolio':
+        Model = Portfolio;
+        break;
+      case 'services':
+        Model = Service;
+        break;
+      case 'labs':
+        Model = Lab;
+        break;
+      case 'contacts':
+        Model = Contact;
+        break;
+      default:
+        return res.status(400).json({
+          success: false,
+          message: 'Invalid type',
+        });
+    }
+
+    const result = await Model.deleteMany({ _id: { $in: ids } });
+
+    res.json({
+      success: true,
+      message: `${result.deletedCount} items deleted successfully`,
+      data: {
+        deletedCount: result.deletedCount,
       },
     });
   } catch (error) {

@@ -32,6 +32,10 @@ const router = express.Router();
  *                 type: string
  *               password:
  *                 type: string
+  *               role:
+  *                 type: string
+  *                 enum: [admin, client, guest]
+  *                 default: client
  *     responses:
  *       201:
  *         description: User registered successfully
@@ -40,7 +44,7 @@ const router = express.Router();
  */
 router.post('/register', validate(schemas.register), async (req, res, next) => {
   try {
-    const { name, email, password } = req.body;
+    const { name, email, password, role = 'client' } = req.body;
 
     // Check if user already exists
     const existingUser = await User.findOne({ email });
@@ -58,7 +62,8 @@ router.post('/register', validate(schemas.register), async (req, res, next) => {
     const user = new User({
       name,
       email,
-      password_hash: hashedPassword
+      password_hash: hashedPassword,
+      role
     });
 
     await user.save();
