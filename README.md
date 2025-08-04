@@ -5,4 +5,7 @@
       Calculator<br/>
 3.) Admin Portal :- Every page of it and also <br/>
     Every connection 
+     make /tabs in admin 
+4.) Align database with frontend
+
 
