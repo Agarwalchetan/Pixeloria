@@ -14,6 +14,7 @@ import NotFound from './pages/NotFound';
 // Admin Components
 import AdminLogin from './pages/AdminLogin';
 import AdminDashboard from './pages/AdminDashboard';
+import AdminTabs from './pages/AdminTabs';
 
 // Lab Tools
 import ColorGenerator from './pages/labs/ColorGenerator';
@@ -42,6 +43,7 @@ function App() {
       {/* Admin Routes */}
       <Route path="/admin/login" element={<AdminLogin />} />
       <Route path="/admin/dashboard" element={<AdminDashboard />} />
+      <Route path="/admin/tabs" element={<AdminTabs />} />
       
       {/* Lab Tools Routes */}
       <Route path="/labs/color-generator" element={<ColorGenerator />} />

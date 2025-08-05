@@ -504,7 +504,7 @@ const Navbar: React.FC<NavbarProps> = ({ isScrolled }) => {
                 whileTap={{ scale: 0.98 }}
               >
                 <NavLink
-                  to="/admin/login"
+                  to="/admin/dashboard"
                   className="relative flex items-center px-4 py-2 rounded-xl bg-gradient-to-r from-gray-600 to-gray-700 text-white font-semibold hover:from-gray-700 hover:to-gray-800 transition-all duration-200 shadow-lg shadow-gray-500/25 hover:shadow-gray-500/40 group overflow-hidden"
                 >
                   <Shield size={16} className="mr-2" />

@@ -116,6 +116,7 @@ export const schemas = {
     role: Joi.string().max(255).allow(''),
     company: Joi.string().max(255).allow(''),
     industry: Joi.string().max(100).allow(''),
+    image_url: Joi.string().uri().allow(''),
     quote: Joi.string().required(),
     full_quote: Joi.string().allow(''),
     rating: Joi.number().integer().min(1).max(5),

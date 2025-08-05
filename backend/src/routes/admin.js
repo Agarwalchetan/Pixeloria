@@ -9,6 +9,8 @@ import NewsletterSubscriber from '../database/models/NewsletterSubscriber.js';
 import Testimonial from '../database/models/Testimonial.js';
 import { authenticateToken, requireAdmin } from '../middleware/auth.js';
 import { validate, schemas } from '../middleware/validation.js';
+import { sendEmail } from '../utils/email.js';
+import { logger } from '../utils/logger.js';
 
 const router = express.Router();
 
@@ -263,7 +265,7 @@ router.get('/users', authenticateToken, requireAdmin, async (req, res, next) => 
  * @swagger
  * /api/admin/users/{id}:
  *   patch:
- *     summary: Update user role
+ *     summary: Update user
  *     tags: [Admin]
  *     security:
  *       - bearerAuth: []
@@ -504,6 +506,96 @@ router.post('/testimonials', authenticateToken, requireAdmin, validate(schemas.t
 
 /**
  * @swagger
+ * /api/admin/testimonials/{id}:
+ *   patch:
+ *     summary: Update testimonial
+ *     tags: [Admin]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: Testimonial ID
+ *     responses:
+ *       200:
+ *         description: Testimonial updated successfully
+ *       404:
+ *         description: Testimonial not found
+ */
+router.patch('/testimonials/:id', authenticateToken, requireAdmin, async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const updates = req.body;
+
+    const testimonial = await Testimonial.findByIdAndUpdate(id, updates, { new: true });
+
+    if (!testimonial) {
+      return res.status(404).json({
+        success: false,
+        message: 'Testimonial not found',
+      });
+    }
+
+    res.json({
+      success: true,
+      message: 'Testimonial updated successfully',
+      data: {
+        testimonial,
+      },
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
+/**
+ * @swagger
+ * /api/admin/testimonials/{id}:
+ *   delete:
+ *     summary: Delete testimonial
+ *     tags: [Admin]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: Testimonial ID
+ *     responses:
+ *       200:
+ *         description: Testimonial deleted successfully
+ *       404:
+ *         description: Testimonial not found
+ */
+router.delete('/testimonials/:id', authenticateToken, requireAdmin, async (req, res, next) => {
+  try {
+    const { id } = req.params;
+
+    const testimonial = await Testimonial.findByIdAndDelete(id);
+
+    if (!testimonial) {
+      return res.status(404).json({
+        success: false,
+        message: 'Testimonial not found',
+      });
+    }
+
+    res.json({
+      success: true,
+      message: 'Testimonial deleted successfully',
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
+/**
+ * @swagger
  * /api/admin/newsletter:
  *   get:
  *     summary: Get newsletter subscribers
@@ -532,6 +624,117 @@ router.get('/newsletter', authenticateToken, requireAdmin, async (req, res, next
 
 /**
  * @swagger
+ * /api/admin/newsletter/send:
+ *   post:
+ *     summary: Send newsletter email to all subscribers
+ *     tags: [Admin]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - subject
+ *               - content
+ *             properties:
+ *               subject:
+ *                 type: string
+ *               content:
+ *                 type: string
+ *     responses:
+ *       200:
+ *         description: Newsletter sent successfully
+ */
+router.post('/newsletter/send', authenticateToken, requireAdmin, async (req, res, next) => {
+  try {
+    const { subject, content } = req.body;
+
+    if (!subject || !content) {
+      return res.status(400).json({
+        success: false,
+        message: 'Subject and content are required',
+      });
+    }
+
+    // Get all subscribers
+    const subscribers = await NewsletterSubscriber.find();
+
+    // Send email to all subscribers
+    const emailPromises = subscribers.map(subscriber => 
+      sendEmail({
+        to: subscriber.email,
+        subject,
+        html: content,
+      }).catch(error => {
+        logger.error(`Failed to send newsletter to ${subscriber.email}:`, error);
+        return null;
+      })
+    );
+
+    const results = await Promise.allSettled(emailPromises);
+    const successCount = results.filter(result => result.status === 'fulfilled').length;
+
+    res.json({
+      success: true,
+      message: `Newsletter sent to ${successCount} out of ${subscribers.length} subscribers`,
+      data: {
+        totalSubscribers: subscribers.length,
+        successfulSends: successCount,
+      },
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
+/**
+ * @swagger
+ * /api/admin/newsletter/{id}:
+ *   delete:
+ *     summary: Remove newsletter subscriber
+ *     tags: [Admin]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: Subscriber ID
+ *     responses:
+ *       200:
+ *         description: Subscriber removed successfully
+ *       404:
+ *         description: Subscriber not found
+ */
+router.delete('/newsletter/:id', authenticateToken, requireAdmin, async (req, res, next) => {
+  try {
+    const { id } = req.params;
+
+    const subscriber = await NewsletterSubscriber.findByIdAndDelete(id);
+
+    if (!subscriber) {
+      return res.status(404).json({
+        success: false,
+        message: 'Subscriber not found',
+      });
+    }
+
+    res.json({
+      success: true,
+      message: 'Subscriber removed successfully',
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
+/**
+ * @swagger
  * /api/admin/bulk-delete:
  *   post:
  *     summary: Bulk delete items
@@ -550,7 +753,7 @@ router.get('/newsletter', authenticateToken, requireAdmin, async (req, res, next
  *             properties:
  *               type:
  *                 type: string
- *                 enum: [blogs, portfolio, services, labs, contacts]
+ *                 enum: [blogs, portfolio, services, labs, contacts, testimonials, newsletter]
  *               ids:
  *                 type: array
  *                 items:
@@ -587,6 +790,12 @@ router.post('/bulk-delete', authenticateToken, requireAdmin, async (req, res, ne
       case 'contacts':
         Model = Contact;
         break;
+      case 'testimonials':
+        Model = Testimonial;
+        break;
+      case 'newsletter':
+        Model = NewsletterSubscriber;
+        break;
       default:
         return res.status(400).json({
           success: false,
@@ -602,6 +811,60 @@ router.post('/bulk-delete', authenticateToken, requireAdmin, async (req, res, ne
       data: {
         deletedCount: result.deletedCount,
       },
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
+/**
+ * @swagger
+ * /api/admin/analytics:
+ *   get:
+ *     summary: Get analytics data
+ *     tags: [Admin]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Analytics data retrieved successfully
+ */
+router.get('/analytics', authenticateToken, requireAdmin, async (req, res, next) => {
+  try {
+    // Mock analytics data - in real app, this would come from analytics service
+    const analyticsData = {
+      pageViews: {
+        total: 12543,
+        thisMonth: 3421,
+        growth: 15
+      },
+      labUsage: {
+        total: 2847,
+        thisMonth: 892,
+        growth: 22
+      },
+      costCalculator: {
+        total: 1234,
+        thisMonth: 345,
+        growth: 8
+      },
+      popularPages: [
+        { page: '/labs/color-generator', views: 1245 },
+        { page: '/cost-estimator', views: 987 },
+        { page: '/portfolio', views: 876 },
+        { page: '/services', views: 654 },
+      ],
+      popularLabTools: [
+        { name: 'AI Color Generator', usage: 95 },
+        { name: 'Neural Network Viz', usage: 88 },
+        { name: 'Animation Tester', usage: 82 },
+        { name: 'Code Playground', usage: 75 },
+      ]
+    };
+
+    res.json({
+      success: true,
+      data: analyticsData,
     });
   } catch (error) {
     next(error);
