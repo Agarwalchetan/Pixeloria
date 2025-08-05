@@ -43,6 +43,7 @@ A comprehensive Node.js/Express backend for the Pixeloria web development agency
    ```bash
    cd backend
    npm install
+   node src/server.js
    ```
 
 2. **Environment Configuration**:
