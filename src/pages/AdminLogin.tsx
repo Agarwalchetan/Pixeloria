@@ -41,7 +41,7 @@ const AdminLogin: React.FC = () => {
         localStorage.setItem('adminUser', JSON.stringify(data.data.user));
         
         // Redirect to admin dashboard
-        navigate('/admin/dashboard');
+        navigate('/admin/dashboard/overview');
       } else {
         setError(data.message || 'Login failed');
       }

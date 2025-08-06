@@ -1,6 +1,7 @@
 import React from 'react';
 import { Routes, Route } from 'react-router-dom';
 import Layout from './layouts/Layout';
+import AdminLayout from './admin/AdminLayout';
 import Home from './pages/Home';
 import About from './pages/About';
 import Services from './pages/Services';
@@ -13,8 +14,12 @@ import NotFound from './pages/NotFound';
 
 // Admin Components
 import AdminLogin from './pages/AdminLogin';
-import AdminDashboard from './pages/AdminDashboard';
-import AdminTabs from './pages/AdminTabs';
+
+// Admin Dashboard Components
+import Dashboard from './admin/Dashboard';
+import Portfolio as AdminPortfolio from './admin/Portfolio';
+import Blog as AdminBlog from './admin/Blog';
+import Users from './admin/Users';
 
 // Lab Tools
 import ColorGenerator from './pages/labs/ColorGenerator';
@@ -42,8 +47,19 @@ function App() {
       
       {/* Admin Routes */}
       <Route path="/admin/login" element={<AdminLogin />} />
-      <Route path="/admin/dashboard" element={<AdminDashboard />} />
-      <Route path="/admin/tabs" element={<AdminTabs />} />
+      <Route path="/admin/dashboard" element={<AdminLayout />}>
+        <Route index element={<Dashboard />} />
+        <Route path="overview" element={<Dashboard />} />
+        <Route path="portfolio" element={<AdminPortfolio />} />
+        <Route path="blog" element={<AdminBlog />} />
+        <Route path="labs" element={<div>Labs Management Coming Soon</div>} />
+        <Route path="services" element={<div>Services Management Coming Soon</div>} />
+        <Route path="testimonials" element={<div>Testimonials Management Coming Soon</div>} />
+        <Route path="contact-inquiries" element={<div>Contact Inquiries Coming Soon</div>} />
+        <Route path="newsletter" element={<div>Newsletter Management Coming Soon</div>} />
+        <Route path="analytics" element={<div>Analytics Coming Soon</div>} />
+        <Route path="users" element={<Users />} />
+      </Route>
       
       {/* Lab Tools Routes */}
       <Route path="/labs/color-generator" element={<ColorGenerator />} />
