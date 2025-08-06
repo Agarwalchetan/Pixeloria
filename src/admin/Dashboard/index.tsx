@@ -1,10 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import {
-  Users, FileText, FolderOpen, Flask, Settings, Star, Mail, MessageSquare,
-  TrendingUp, ArrowUpRight, ArrowDownRight, Plus, Eye, Edit, Trash2,
-  Calendar, Clock, Activity, BarChart3
-} from 'lucide-react';
+import { Users, FileText, FolderOpen, FlaskRound as Flask, Settings, Star, Mail, MessageSquare, TrendingUp, ArrowUpRight, ArrowDownRight, Plus, Eye, Edit, Trash2, Calendar, Clock, Activity, BarChart3 } from 'lucide-react';
 
 interface DashboardStats {
   portfolio: number;
