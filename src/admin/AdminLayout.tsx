@@ -1,11 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Outlet, useNavigate, useLocation, Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import {
-  LayoutDashboard, FolderOpen, FileText, Flask, Settings as SettingsIcon,
-  Star, Mail, Users, BarChart3, MessageSquare, LogOut, Menu, X,
-  Code, Shield, Bell, Search, User, ChevronDown, Home
-} from 'lucide-react';
+import { LayoutDashboard, FolderOpen, FileText, FlaskRound as Flask, Settings as SettingsIcon, Star, Mail, Users, BarChart3, MessageSquare, LogOut, Menu, X, Code, Shield, Bell, Search, User, ChevronDown, Home } from 'lucide-react';
 
 const AdminLayout: React.FC = () => {
   const [sidebarOpen, setSidebarOpen] = useState(true);
