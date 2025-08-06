@@ -17,8 +17,8 @@ import AdminLogin from './pages/AdminLogin';
 
 // Admin Dashboard Components
 import Dashboard from './admin/Dashboard';
-import Portfolio as AdminPortfolio from './admin/Portfolio';
-import Blog as AdminBlog from './admin/Blog';
+import AdminPortfolio from './admin/Portfolio';
+import AdminBlog from './admin/Blog';
 import Users from './admin/Users';
 
 // Lab Tools
