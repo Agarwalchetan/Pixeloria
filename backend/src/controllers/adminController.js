@@ -455,6 +455,22 @@ export const deleteTestimonial = async (req, res, next) => {
   }
 };
 
+export const updateSettings = async (req, res, next) => {
+  try {
+    const { type, settings } = req.body;
+
+    // In a real app, you'd save these to a Settings model
+    // For now, we'll just return success
+    res.json({
+      success: true,
+      message: `${type} settings updated successfully`,
+      data: { settings }
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
 export const bulkDelete = async (req, res, next) => {
   try {
     const { type, ids } = req.body;

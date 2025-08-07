@@ -1,7 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Link, useNavigate } from 'react-router-dom';
-import { Code, Mail, Lock, Eye, EyeOff, Shield, ArrowRight } from 'lucide-react';
+import { Code, Mail, Lock, Eye, EyeOff, Shield, ArrowRight, AlertCircle } from 'lucide-react';
+import { authUtils } from '../utils/auth';
 
 const AdminLogin: React.FC = () => {
   const [formData, setFormData] = useState({
@@ -11,7 +12,15 @@ const AdminLogin: React.FC = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
+  const [rememberMe, setRememberMe] = useState(true);
   const navigate = useNavigate();
+
+  // Check if already logged in
+  useEffect(() => {
+    if (authUtils.isAuthenticated() && authUtils.isAdmin()) {
+      navigate('/admin/dashboard/overview');
+    }
+  }, [navigate]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -36,9 +45,14 @@ const AdminLogin: React.FC = () => {
       const data = await response.json();
 
       if (data.success) {
-        // Store token and user info
-        localStorage.setItem('adminToken', data.data.token);
-        localStorage.setItem('adminUser', JSON.stringify(data.data.user));
+        // Check if user is admin
+        if (data.data.user.role !== 'admin') {
+          setError('Access denied. Admin privileges required.');
+          return;
+        }
+
+        // Use auth utility to store authentication data
+        authUtils.setAuth(data.data.token, data.data.user, rememberMe);
         
         // Redirect to admin dashboard
         navigate('/admin/dashboard/overview');
@@ -163,13 +177,30 @@ const AdminLogin: React.FC = () => {
               </div>
             </div>
 
+            {/* Remember Me */}
+            <div className="flex items-center justify-between">
+              <label className="flex items-center">
+                <input
+                  type="checkbox"
+                  checked={rememberMe}
+                  onChange={(e) => setRememberMe(e.target.checked)}
+                  className="rounded border-gray-600 text-blue-600 focus:ring-blue-500 focus:ring-offset-gray-800"
+                />
+                <span className="ml-2 text-sm text-gray-300">Remember me for 7 days</span>
+              </label>
+              <Link to="/admin/forgot-password" className="text-sm text-blue-400 hover:text-blue-300">
+                Forgot password?
+              </Link>
+            </div>
+
             {/* Error Message */}
             {error && (
               <motion.div
                 initial={{ opacity: 0, y: -10 }}
                 animate={{ opacity: 1, y: 0 }}
-                className="bg-red-500/10 border border-red-500/20 rounded-lg p-3"
+                className="bg-red-500/10 border border-red-500/20 rounded-lg p-3 flex items-center"
               >
+                <AlertCircle className="w-5 h-5 text-red-400 mr-2" />
                 <p className="text-red-400 text-sm">{error}</p>
               </motion.div>
             )}
@@ -193,7 +224,7 @@ const AdminLogin: React.FC = () => {
                 </div>
               ) : (
                 <div className="flex items-center">
-                  Sign In
+                  Sign In to Dashboard
                   <ArrowRight className="ml-2" size={20} />
                 </div>
               )}
@@ -203,8 +234,13 @@ const AdminLogin: React.FC = () => {
           {/* Demo Credentials */}
           <div className="mt-6 p-4 bg-blue-500/10 border border-blue-500/20 rounded-lg">
             <p className="text-blue-400 text-sm font-medium mb-2">Demo Credentials:</p>
-            <p className="text-blue-300 text-xs">Email: admin@pixeloria.com</p>
-            <p className="text-blue-300 text-xs">Password: admin123</p>
+            <div className="space-y-1">
+              <p className="text-blue-300 text-xs">Email: admin@pixeloria.com</p>
+              <p className="text-blue-300 text-xs">Password: admin123</p>
+            </div>
+            <p className="text-blue-400 text-xs mt-2">
+              💡 Use "Remember me" for persistent login
+            </p>
           </div>
         </motion.div>
 

@@ -1,7 +1,7 @@
 import React from 'react';
 import { Routes, Route } from 'react-router-dom';
 import Layout from './layouts/Layout';
-import AdminLayout from './admin/AdminLayout';
+import ProtectedRoute from './components/ProtectedRoute';
 import Home from './pages/Home';
 import About from './pages/About';
 import Services from './pages/Services';
@@ -14,12 +14,20 @@ import NotFound from './pages/NotFound';
 
 // Admin Components
 import AdminLogin from './pages/AdminLogin';
+import AdminDashboard from './pages/AdminDashboard';
 
-// Admin Dashboard Components
+// Admin Tab Components
 import Dashboard from './admin/Dashboard';
 import AdminPortfolio from './admin/Portfolio';
 import AdminBlog from './admin/Blog';
-import Users from './admin/Users';
+import AdminServices from './admin/Services';
+import AdminLabs from './admin/Labs';
+import AdminTestimonials from './admin/Testimonials';
+import AdminContactInquiries from './admin/ContactInquiries';
+import AdminNewsletter from './admin/Newsletter';
+import AdminSettings from './admin/Settings';
+import AdminAnalytics from './admin/Analytics';
+import AdminUsers from './admin/Users';
 
 // Lab Tools
 import ColorGenerator from './pages/labs/ColorGenerator';
@@ -46,19 +54,24 @@ function App() {
       <Route path="/cost-estimator" element={<CostEstimator />} />
       
       {/* Admin Routes */}
-      <Route path="/admin/login" element={<AdminLogin />} />
-      <Route path="/admin/dashboard" element={<AdminLayout />}>
+      <Route path="/admin" element={<AdminLogin />} />
+      <Route path="/admin/dashboard" element={
+        <ProtectedRoute requireAdmin={true}>
+          <AdminDashboard />
+        </ProtectedRoute>
+      }>
         <Route index element={<Dashboard />} />
         <Route path="overview" element={<Dashboard />} />
         <Route path="portfolio" element={<AdminPortfolio />} />
         <Route path="blog" element={<AdminBlog />} />
-        <Route path="labs" element={<div>Labs Management Coming Soon</div>} />
-        <Route path="services" element={<div>Services Management Coming Soon</div>} />
-        <Route path="testimonials" element={<div>Testimonials Management Coming Soon</div>} />
-        <Route path="contact-inquiries" element={<div>Contact Inquiries Coming Soon</div>} />
-        <Route path="newsletter" element={<div>Newsletter Management Coming Soon</div>} />
-        <Route path="analytics" element={<div>Analytics Coming Soon</div>} />
-        <Route path="users" element={<Users />} />
+        <Route path="services" element={<AdminServices />} />
+        <Route path="labs" element={<AdminLabs />} />
+        <Route path="testimonials" element={<AdminTestimonials />} />
+        <Route path="contact-inquiries" element={<AdminContactInquiries />} />
+        <Route path="newsletter" element={<AdminNewsletter />} />
+        <Route path="settings" element={<AdminSettings />} />
+        <Route path="analytics" element={<AdminAnalytics />} />
+        <Route path="users" element={<AdminUsers />} />
       </Route>
       
       {/* Lab Tools Routes */}

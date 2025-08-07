@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Users, FileText, FolderOpen, FlaskRound as Flask, Settings, Star, Mail, MessageSquare, TrendingUp, ArrowUpRight, ArrowDownRight, Plus, Eye, Edit, Trash2, Calendar, Clock, Activity, BarChart3 } from 'lucide-react';
+import { authUtils } from '../../utils/auth';
 
 interface DashboardStats {
   portfolio: number;
@@ -41,7 +42,7 @@ const Dashboard: React.FC = () => {
 
   const fetchDashboardData = async () => {
     try {
-      const token = localStorage.getItem('adminToken');
+      const token = authUtils.getToken();
       const response = await fetch('http://localhost:5000/api/admin/dashboard/overview', {
         headers: {
           'Authorization': `Bearer ${token}`,

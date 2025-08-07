@@ -19,7 +19,8 @@ import {
   createTestimonial,
   updateTestimonial,
   deleteTestimonial,
-  bulkDelete
+  bulkDelete,
+  updateSettings
 } from '../controllers/adminController.js';
 
 import {
@@ -130,6 +131,23 @@ router.delete('/dashboard/testimonials/:id', deleteTestimonial);
 router.get('/dashboard/newsletter', getNewsletterSubscribers);
 router.post('/dashboard/newsletter/send', sendNewsletter);
 router.delete('/dashboard/newsletter/:id', deleteNewsletterSubscriber);
+
+// Settings routes
+router.get('/dashboard/settings', (req, res) => {
+  res.json({
+    success: true,
+    data: {
+      general: {
+        site_title: 'Pixeloria',
+        site_description: 'Crafting Digital Experiences That Grow Your Business',
+        contact_email: 'hello@pixeloria.com',
+        contact_phone: '(415) 555-0123',
+        office_address: '123 Web Dev Lane, San Francisco, CA 94103'
+      }
+    }
+  });
+});
+router.put('/dashboard/settings', updateSettings);
 
 // Users routes
 router.get('/dashboard/users', getUsers);

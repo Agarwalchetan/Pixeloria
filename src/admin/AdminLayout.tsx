@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Outlet, useNavigate, useLocation, Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { LayoutDashboard, FolderOpen, FileText, FlaskRound as Flask, Settings as SettingsIcon, Star, Mail, Users, BarChart3, MessageSquare, LogOut, Menu, X, Code, Shield, Bell, Search, User, ChevronDown, Home } from 'lucide-react';
+import { authUtils } from '../utils/auth';
 
 const AdminLayout: React.FC = () => {
   const [sidebarOpen, setSidebarOpen] = useState(true);
@@ -85,26 +86,19 @@ const AdminLayout: React.FC = () => {
 
   useEffect(() => {
     // Check authentication
-    const token = localStorage.getItem('adminToken');
-    const user = localStorage.getItem('adminUser');
+    const user = authUtils.getUser();
     
-    if (!token || !user) {
-      navigate('/admin/login');
+    if (!authUtils.isAuthenticated() || !authUtils.isAdmin()) {
+      navigate('/admin');
       return;
     }
 
-    try {
-      setAdminUser(JSON.parse(user));
-    } catch (error) {
-      console.error('Error parsing admin user:', error);
-      navigate('/admin/login');
-    }
+    setAdminUser(user);
   }, [navigate]);
 
   const handleLogout = () => {
-    localStorage.removeItem('adminToken');
-    localStorage.removeItem('adminUser');
-    navigate('/admin/login');
+    authUtils.clearAuth();
+    navigate('/admin');
   };
 
   const isActiveTab = (path: string) => {
