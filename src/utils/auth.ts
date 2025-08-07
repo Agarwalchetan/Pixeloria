@@ -1,7 +1,7 @@
-import Cookies from 'js-cookie';
+import Cookies from "js-cookie";
 
-export const AUTH_TOKEN_KEY = 'adminToken';
-export const AUTH_USER_KEY = 'adminUser';
+export const AUTH_TOKEN_KEY = "adminToken";
+export const AUTH_USER_KEY = "adminUser";
 
 export interface User {
   id: string;
@@ -24,7 +24,9 @@ export const authUtils = {
   // Get user from localStorage or sessionStorage
   getUser(): User | null {
     try {
-      const userStr = localStorage.getItem(AUTH_USER_KEY) || sessionStorage.getItem(AUTH_USER_KEY);
+      const userStr =
+        localStorage.getItem(AUTH_USER_KEY) ||
+        sessionStorage.getItem(AUTH_USER_KEY);
       return userStr ? JSON.parse(userStr) : null;
     } catch {
       return null;
@@ -34,16 +36,16 @@ export const authUtils = {
   // Set authentication data
   setAuth(token: string, user: User, rememberMe: boolean = false): void {
     const storage = rememberMe ? localStorage : sessionStorage;
-    
+
     storage.setItem(AUTH_TOKEN_KEY, token);
     storage.setItem(AUTH_USER_KEY, JSON.stringify(user));
-    
+
     // Set cookie for long-term session if remember me is checked
     if (rememberMe) {
-      Cookies.set(AUTH_TOKEN_KEY, token, { 
+      Cookies.set(AUTH_TOKEN_KEY, token, {
         expires: 7, // 7 days
         secure: true,
-        sameSite: 'strict'
+        sameSite: "strict",
       });
     }
   },
@@ -65,7 +67,7 @@ export const authUtils = {
   // Check if user is admin
   isAdmin(): boolean {
     const user = this.getUser();
-    return user?.role === 'admin';
+    return user?.role === "admin";
   },
 
   // Verify token with backend
@@ -74,16 +76,18 @@ export const authUtils = {
       const token = this.getToken();
       if (!token) return false;
 
-      const response = await fetch('http://localhost:5000/api/auth/me', {
+      const response = await fetch("http://localhost:5000/api/auth/me", {
         headers: {
-          'Authorization': `Bearer ${token}`,
+          Authorization: `Bearer ${token}`,
         },
       });
 
       if (response.ok) {
         const data = await response.json();
         // Update user data if token is valid
-        const storage = localStorage.getItem(AUTH_TOKEN_KEY) ? localStorage : sessionStorage;
+        const storage = localStorage.getItem(AUTH_TOKEN_KEY)
+          ? localStorage
+          : sessionStorage;
         storage.setItem(AUTH_USER_KEY, JSON.stringify(data.data.user));
         return true;
       } else {
@@ -92,11 +96,11 @@ export const authUtils = {
         return false;
       }
     } catch (error) {
-      console.error('Token verification failed:', error);
+      console.error("Token verification failed:", error);
       this.clearAuth();
       return false;
     }
-  }
+  },
 };
 
 export default authUtils;
