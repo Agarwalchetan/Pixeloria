@@ -7,14 +7,21 @@ export interface ApiResponse<T> {
   error?: string;
 }
 
+// Helper function to get auth headers
+const getAuthHeaders = () => {
+  const token = localStorage.getItem('adminToken') || sessionStorage.getItem('adminToken');
+  return token ? { 'Authorization': `Bearer ${token}` } : {};
+};
 export async function fetchApi<T>(
   endpoint: string,
   options?: RequestInit
 ): Promise<ApiResponse<T>> {
   try {
+    const authHeaders = getAuthHeaders();
     const response = await fetch(`${API_BASE_URL}${endpoint}`, {
       headers: {
         'Content-Type': 'application/json',
+        ...authHeaders,
         ...options?.headers,
       },
       ...options,
@@ -39,9 +46,14 @@ export async function fetchApiWithFormData<T>(
   options?: Omit<RequestInit, 'body'>
 ): Promise<ApiResponse<T>> {
   try {
+    const authHeaders = getAuthHeaders();
     const response = await fetch(`${API_BASE_URL}${endpoint}`, {
       method: 'POST',
       body: formData,
+      headers: {
+        ...authHeaders,
+        ...options?.headers,
+      },
       ...options,
     });
 
@@ -58,6 +70,89 @@ export async function fetchApiWithFormData<T>(
   }
 }
 
+// Admin API functions
+export const adminApi = {
+  getDashboardOverview: () => fetchApi<{
+    statistics: any;
+    charts: any;
+    recent: any;
+  }>('/admin/dashboard/overview'),
+  
+  getAnalytics: () => fetchApi<any>('/admin/dashboard/analytics'),
+  
+  getContacts: (params?: { status?: string; limit?: number; offset?: number }) => {
+    const searchParams = new URLSearchParams();
+    if (params?.status) searchParams.append('status', params.status);
+    if (params?.limit) searchParams.append('limit', params.limit.toString());
+    if (params?.offset) searchParams.append('offset', params.offset.toString());
+    
+    const queryString = searchParams.toString();
+    return fetchApi<{ contacts: any[]; total: number }>(`/admin/dashboard/contact-inquiries${queryString ? `?${queryString}` : ''}`);
+  },
+  
+  updateContactStatus: (id: string, status: string) => 
+    fetchApi<{ contact: any }>(`/admin/dashboard/contact-inquiries/${id}/status`, {
+      method: 'PATCH',
+      body: JSON.stringify({ status }),
+    }),
+  
+  getUsers: () => fetchApi<{ users: any[]; total: number }>('/admin/dashboard/users'),
+  
+  updateUser: (id: string, updates: any) => 
+    fetchApi<{ user: any }>(`/admin/dashboard/users/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(updates),
+    }),
+  
+  deleteUser: (id: string) => 
+    fetchApi<{}>(`/admin/dashboard/users/${id}`, {
+      method: 'DELETE',
+    }),
+  
+  getTestimonials: () => fetchApi<{ testimonials: any[]; total: number }>('/admin/dashboard/testimonials'),
+  
+  createTestimonial: (testimonialData: any) => 
+    fetchApi<{ testimonial: any }>('/admin/dashboard/testimonials', {
+      method: 'POST',
+      body: JSON.stringify(testimonialData),
+    }),
+  
+  updateTestimonial: (id: string, updates: any) => 
+    fetchApi<{ testimonial: any }>(`/admin/dashboard/testimonials/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(updates),
+    }),
+  
+  deleteTestimonial: (id: string) => 
+    fetchApi<{}>(`/admin/dashboard/testimonials/${id}`, {
+      method: 'DELETE',
+    }),
+  
+  getNewsletterSubscribers: () => fetchApi<{ subscribers: any[]; total: number }>('/admin/dashboard/newsletter'),
+  
+  sendNewsletter: (emailData: { subject: string; content: string }) => 
+    fetchApi<{ totalSubscribers: number; successfulSends: number }>('/admin/dashboard/newsletter/send', {
+      method: 'POST',
+      body: JSON.stringify(emailData),
+    }),
+  
+  deleteNewsletterSubscriber: (id: string) => 
+    fetchApi<{}>(`/admin/dashboard/newsletter/${id}`, {
+      method: 'DELETE',
+    }),
+  
+  bulkDelete: (type: string, ids: string[]) => 
+    fetchApi<{ deletedCount: number }>('/admin/dashboard/bulk-delete', {
+      method: 'POST',
+      body: JSON.stringify({ type, ids }),
+    }),
+  
+  updateSettings: (type: string, settings: any) => 
+    fetchApi<{ settings: any }>('/admin/dashboard/settings', {
+      method: 'PUT',
+      body: JSON.stringify({ type, settings }),
+    }),
+};
 // API endpoint functions
 export const blogApi = {
   getAll: (params?: { category?: string; limit?: number; offset?: number }) => {
@@ -71,6 +166,44 @@ export const blogApi = {
   },
   
   getById: (id: string) => fetchApi<{ post: any }>(`/blogs/${id}`),
+  
+  create: (blogData: any, image?: File) => {
+    if (image) {
+      const formData = new FormData();
+      Object.keys(blogData).forEach(key => {
+        formData.append(key, blogData[key]);
+      });
+      formData.append('image', image);
+      return fetchApiWithFormData<{ post: any }>('/admin/dashboard/blog', formData);
+    } else {
+      return fetchApi<{ post: any }>('/admin/dashboard/blog', {
+        method: 'POST',
+        body: JSON.stringify(blogData),
+      });
+    }
+  },
+  
+  update: (id: string, blogData: any, image?: File) => {
+    if (image) {
+      const formData = new FormData();
+      Object.keys(blogData).forEach(key => {
+        formData.append(key, blogData[key]);
+      });
+      formData.append('image', image);
+      return fetchApiWithFormData<{ post: any }>(`/admin/dashboard/blog/${id}`, formData, {
+        method: 'PUT',
+      });
+    } else {
+      return fetchApi<{ post: any }>(`/admin/dashboard/blog/${id}`, {
+        method: 'PUT',
+        body: JSON.stringify(blogData),
+      });
+    }
+  },
+  
+  delete: (id: string) => fetchApi<{}>(`/admin/dashboard/blog/${id}`, {
+    method: 'DELETE',
+  }),
 };
 
 export const portfolioApi = {
@@ -85,6 +218,38 @@ export const portfolioApi = {
   },
   
   getById: (id: string) => fetchApi<{ project: any }>(`/portfolio/${id}`),
+  
+  create: (projectData: any, images?: File[]) => {
+    const formData = new FormData();
+    Object.keys(projectData).forEach(key => {
+      formData.append(key, projectData[key]);
+    });
+    if (images) {
+      images.forEach(image => {
+        formData.append('images', image);
+      });
+    }
+    return fetchApiWithFormData<{ project: any }>('/admin/dashboard/portfolio', formData);
+  },
+  
+  update: (id: string, projectData: any, images?: File[]) => {
+    const formData = new FormData();
+    Object.keys(projectData).forEach(key => {
+      formData.append(key, projectData[key]);
+    });
+    if (images) {
+      images.forEach(image => {
+        formData.append('images', image);
+      });
+    }
+    return fetchApiWithFormData<{ project: any }>(`/admin/dashboard/portfolio/${id}`, formData, {
+      method: 'PUT',
+    });
+  },
+  
+  delete: (id: string) => fetchApi<{}>(`/admin/dashboard/portfolio/${id}`, {
+    method: 'DELETE',
+  }),
 };
 
 export const labsApi = {
@@ -97,6 +262,44 @@ export const labsApi = {
   },
   
   getById: (id: string) => fetchApi<{ lab: any }>(`/labs/${id}`),
+  
+  create: (labData: any, image?: File) => {
+    if (image) {
+      const formData = new FormData();
+      Object.keys(labData).forEach(key => {
+        formData.append(key, labData[key]);
+      });
+      formData.append('image', image);
+      return fetchApiWithFormData<{ lab: any }>('/admin/dashboard/labs', formData);
+    } else {
+      return fetchApi<{ lab: any }>('/admin/dashboard/labs', {
+        method: 'POST',
+        body: JSON.stringify(labData),
+      });
+    }
+  },
+  
+  update: (id: string, labData: any, image?: File) => {
+    if (image) {
+      const formData = new FormData();
+      Object.keys(labData).forEach(key => {
+        formData.append(key, labData[key]);
+      });
+      formData.append('image', image);
+      return fetchApiWithFormData<{ lab: any }>(`/admin/dashboard/labs/${id}`, formData, {
+        method: 'PUT',
+      });
+    } else {
+      return fetchApi<{ lab: any }>(`/admin/dashboard/labs/${id}`, {
+        method: 'PUT',
+        body: JSON.stringify(labData),
+      });
+    }
+  },
+  
+  delete: (id: string) => fetchApi<{}>(`/admin/dashboard/labs/${id}`, {
+    method: 'DELETE',
+  }),
 };
 
 export const servicesApi = {
@@ -109,16 +312,45 @@ export const servicesApi = {
   },
   
   getById: (id: string) => fetchApi<{ service: any }>(`/services/${id}`),
+  
+  create: (serviceData: any) => 
+    fetchApi<{ service: any }>('/admin/dashboard/services', {
+      method: 'POST',
+      body: JSON.stringify(serviceData),
+    }),
+  
+  update: (id: string, serviceData: any) => 
+    fetchApi<{ service: any }>(`/admin/dashboard/services/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(serviceData),
+    }),
+  
+  delete: (id: string) => fetchApi<{}>(`/admin/dashboard/services/${id}`, {
+    method: 'DELETE',
+  }),
 };
 
 export const contactApi = {
   submit: (contactData: any, file?: File) => {
     const formData = new FormData();
     
-    // Add all contact fields to FormData
+    // Map frontend field names to backend field names
+    const fieldMapping = {
+      firstName: 'first_name',
+      lastName: 'last_name',
+      email: 'email',
+      company: 'company',
+      phone: 'phone',
+      projectType: 'project_type',
+      budget: 'budget',
+      message: 'message'
+    };
+    
+    // Add all contact fields to FormData with correct field names
     Object.keys(contactData).forEach(key => {
       if (contactData[key]) {
-        formData.append(key, contactData[key]);
+        const backendKey = fieldMapping[key as keyof typeof fieldMapping] || key;
+        formData.append(backendKey, contactData[key]);
       }
     });
     

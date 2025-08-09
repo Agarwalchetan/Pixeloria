@@ -4,6 +4,7 @@ import {
   Plus, Search, Edit, Trash2, Shield, User, Mail,
   X, AlertTriangle, Crown, Users as UsersIcon
 } from 'lucide-react';
+import { adminApi } from '../../utils/api';
 
 interface AdminUser {
   _id: string;
@@ -33,16 +34,9 @@ const Users: React.FC = () => {
 
   const fetchUsers = async () => {
     try {
-      const token = localStorage.getItem('adminToken');
-      const response = await fetch('http://localhost:5000/api/admin/dashboard/users', {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-        },
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        setUsers(data.data.users);
+      const response = await adminApi.getUsers();
+      if (response.success && response.data) {
+        setUsers(response.data.users);
       }
     } catch (error) {
       console.error('Error fetching users:', error);
@@ -55,30 +49,22 @@ const Users: React.FC = () => {
     e.preventDefault();
     
     try {
-      const token = localStorage.getItem('adminToken');
-      
       if (editingUser) {
         // Update existing user
-        const response = await fetch(`http://localhost:5000/api/admin/dashboard/users/${editingUser._id}`, {
-          method: 'PUT',
-          headers: {
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            name: formData.name,
-            email: formData.email,
-            role: formData.role
-          }),
+        const response = await adminApi.updateUser(editingUser._id, {
+          name: formData.name,
+          email: formData.email,
+          role: formData.role
         });
 
-        if (response.ok) {
+        if (response.success) {
           await fetchUsers();
           setShowCreateModal(false);
           setEditingUser(null);
         }
       } else {
         // Create new user
+        const token = localStorage.getItem('adminToken') || sessionStorage.getItem('adminToken');
         const response = await fetch('http://localhost:5000/api/auth/register', {
           method: 'POST',
           headers: {
@@ -88,7 +74,8 @@ const Users: React.FC = () => {
           body: JSON.stringify(formData),
         });
 
-        if (response.ok) {
+        const data = await response.json();
+        if (data.success) {
           await fetchUsers();
           setShowCreateModal(false);
         }
@@ -109,15 +96,8 @@ const Users: React.FC = () => {
     if (!confirm('Are you sure you want to delete this user?')) return;
 
     try {
-      const token = localStorage.getItem('adminToken');
-      const response = await fetch(`http://localhost:5000/api/admin/dashboard/users/${id}`, {
-        method: 'DELETE',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-        },
-      });
-
-      if (response.ok) {
+      const response = await adminApi.deleteUser(id);
+      if (response.success) {
         await fetchUsers();
       }
     } catch (error) {

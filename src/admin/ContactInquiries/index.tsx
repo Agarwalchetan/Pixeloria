@@ -4,6 +4,7 @@ import {
   Search, Eye, Mail, Phone, Building, Calendar, FileText,
   X, MessageSquare, User, CheckCircle, Clock, AlertCircle
 } from 'lucide-react';
+import { adminApi } from '../../utils/api';
 
 interface Contact {
   _id: string;
@@ -34,16 +35,9 @@ const ContactInquiries: React.FC = () => {
 
   const fetchContacts = async () => {
     try {
-      const token = localStorage.getItem('adminToken') || sessionStorage.getItem('adminToken');
-      const response = await fetch('http://localhost:5000/api/admin/dashboard/contact-inquiries', {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-        },
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        setContacts(data.data.contacts);
+      const response = await adminApi.getContacts();
+      if (response.success && response.data) {
+        setContacts(response.data.contacts);
       }
     } catch (error) {
       console.error('Error fetching contacts:', error);
@@ -54,17 +48,8 @@ const ContactInquiries: React.FC = () => {
 
   const updateContactStatus = async (id: string, status: string) => {
     try {
-      const token = localStorage.getItem('adminToken') || sessionStorage.getItem('adminToken');
-      const response = await fetch(`http://localhost:5000/api/admin/dashboard/contact-inquiries/${id}/status`, {
-        method: 'PATCH',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ status }),
-      });
-
-      if (response.ok) {
+      const response = await adminApi.updateContactStatus(id, status);
+      if (response.success) {
         await fetchContacts();
       }
     } catch (error) {

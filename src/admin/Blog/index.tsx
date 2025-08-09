@@ -4,6 +4,7 @@ import {
   Plus, Search, Edit, Trash2, Eye, Calendar, User,
   X, Upload, BookOpen, Tag, Clock
 } from 'lucide-react';
+import { blogApi } from '../../utils/api';
 
 interface BlogPost {
   _id: string;
@@ -44,16 +45,9 @@ const Blog: React.FC = () => {
 
   const fetchPosts = async () => {
     try {
-      const token = localStorage.getItem('adminToken');
-      const response = await fetch('http://localhost:5000/api/admin/dashboard/blog', {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-        },
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        setPosts(data.data.posts);
+      const response = await blogApi.getAll();
+      if (response.success && response.data) {
+        setPosts(response.data.posts);
       }
     } catch (error) {
       console.error('Error fetching posts:', error);
@@ -66,26 +60,15 @@ const Blog: React.FC = () => {
     e.preventDefault();
     
     try {
-      const token = localStorage.getItem('adminToken');
-      const formDataToSend = new FormData();
+      // Get uploaded image
+      const imageInput = document.getElementById('image') as HTMLInputElement;
+      const image = imageInput?.files?.[0];
       
-      Object.keys(formData).forEach(key => {
-        formDataToSend.append(key, formData[key as keyof typeof formData].toString());
-      });
+      const response = editingPost 
+        ? await blogApi.update(editingPost._id, formData, image)
+        : await blogApi.create(formData, image);
 
-      const url = editingPost 
-        ? `http://localhost:5000/api/admin/dashboard/blog/${editingPost._id}`
-        : 'http://localhost:5000/api/admin/dashboard/blog';
-
-      const response = await fetch(url, {
-        method: editingPost ? 'PUT' : 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-        },
-        body: formDataToSend,
-      });
-
-      if (response.ok) {
+      if (response.success) {
         await fetchPosts();
         setShowCreateModal(false);
         setEditingPost(null);
@@ -99,6 +82,11 @@ const Blog: React.FC = () => {
           read_time: 5,
           status: 'published'
         });
+        
+        // Reset file input
+        if (imageInput) {
+          imageInput.value = '';
+        }
       }
     } catch (error) {
       console.error('Error saving post:', error);
@@ -109,15 +97,8 @@ const Blog: React.FC = () => {
     if (!confirm('Are you sure you want to delete this post?')) return;
 
     try {
-      const token = localStorage.getItem('adminToken');
-      const response = await fetch(`http://localhost:5000/api/admin/dashboard/blog/${id}`, {
-        method: 'DELETE',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-        },
-      });
-
-      if (response.ok) {
+      const response = await blogApi.delete(id);
+      if (response.success) {
         await fetchPosts();
       }
     } catch (error) {

@@ -4,6 +4,7 @@ import {
   Plus, Search, Trash2, Mail, Send, Calendar,
   X, Users, TrendingUp, Eye, Download
 } from 'lucide-react';
+import { adminApi } from '../../utils/api';
 
 interface Subscriber {
   _id: string;
@@ -30,16 +31,9 @@ const Newsletter: React.FC = () => {
 
   const fetchSubscribers = async () => {
     try {
-      const token = localStorage.getItem('adminToken') || sessionStorage.getItem('adminToken');
-      const response = await fetch('http://localhost:5000/api/admin/dashboard/newsletter', {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-        },
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        setSubscribers(data.data.subscribers);
+      const response = await adminApi.getNewsletterSubscribers();
+      if (response.success && response.data) {
+        setSubscribers(response.data.subscribers);
       }
     } catch (error) {
       console.error('Error fetching subscribers:', error);
@@ -53,17 +47,8 @@ const Newsletter: React.FC = () => {
     setIsSending(true);
     
     try {
-      const token = localStorage.getItem('adminToken') || sessionStorage.getItem('adminToken');
-      const response = await fetch('http://localhost:5000/api/admin/dashboard/newsletter/send', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(emailData),
-      });
-
-      if (response.ok) {
+      const response = await adminApi.sendNewsletter(emailData);
+      if (response.success) {
         setShowComposeModal(false);
         setEmailData({ subject: '', content: '' });
         alert('Newsletter sent successfully!');
@@ -80,15 +65,8 @@ const Newsletter: React.FC = () => {
     if (!confirm('Are you sure you want to remove this subscriber?')) return;
 
     try {
-      const token = localStorage.getItem('adminToken') || sessionStorage.getItem('adminToken');
-      const response = await fetch(`http://localhost:5000/api/admin/dashboard/newsletter/${id}`, {
-        method: 'DELETE',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-        },
-      });
-
-      if (response.ok) {
+      const response = await adminApi.deleteNewsletterSubscriber(id);
+      if (response.success) {
         await fetchSubscribers();
       }
     } catch (error) {

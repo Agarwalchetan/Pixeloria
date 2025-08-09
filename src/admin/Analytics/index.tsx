@@ -4,6 +4,7 @@ import {
   BarChart3, TrendingUp, Users, Eye, Clock, Globe,
   Calendar, Download, RefreshCw, Activity
 } from 'lucide-react';
+import { adminApi } from '../../utils/api';
 
 const Analytics: React.FC = () => {
   const [analyticsData, setAnalyticsData] = useState<any>(null);
@@ -16,16 +17,9 @@ const Analytics: React.FC = () => {
 
   const fetchAnalytics = async () => {
     try {
-      const token = localStorage.getItem('adminToken') || sessionStorage.getItem('adminToken');
-      const response = await fetch('http://localhost:5000/api/admin/dashboard/analytics', {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-        },
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        setAnalyticsData(data.data);
+      const response = await adminApi.getAnalytics();
+      if (response.success && response.data) {
+        setAnalyticsData(response.data);
       }
     } catch (error) {
       console.error('Error fetching analytics:', error);

@@ -4,6 +4,7 @@ import {
   Plus, Search, Edit, Trash2, Settings, DollarSign,
   X, Clock, Tag, CheckCircle, AlertCircle
 } from 'lucide-react';
+import { servicesApi } from '../../utils/api';
 
 interface Service {
   _id: string;
@@ -41,16 +42,9 @@ const Services: React.FC = () => {
 
   const fetchServices = async () => {
     try {
-      const token = localStorage.getItem('adminToken') || sessionStorage.getItem('adminToken');
-      const response = await fetch('http://localhost:5000/api/admin/dashboard/services', {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-        },
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        setServices(data.data.services);
+      const response = await servicesApi.getAll();
+      if (response.success && response.data) {
+        setServices(response.data.services);
       }
     } catch (error) {
       console.error('Error fetching services:', error);
@@ -63,27 +57,16 @@ const Services: React.FC = () => {
     e.preventDefault();
     
     try {
-      const token = localStorage.getItem('adminToken') || sessionStorage.getItem('adminToken');
-      
       const serviceData = {
         ...formData,
         features: formData.features.split(',').map(f => f.trim()).filter(f => f)
       };
 
-      const url = editingService 
-        ? `http://localhost:5000/api/admin/dashboard/services/${editingService._id}`
-        : 'http://localhost:5000/api/admin/dashboard/services';
+      const response = editingService 
+        ? await servicesApi.update(editingService._id, serviceData)
+        : await servicesApi.create(serviceData);
 
-      const response = await fetch(url, {
-        method: editingService ? 'PUT' : 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(serviceData),
-      });
-
-      if (response.ok) {
+      if (response.success) {
         await fetchServices();
         setShowCreateModal(false);
         setEditingService(null);
@@ -106,15 +89,8 @@ const Services: React.FC = () => {
     if (!confirm('Are you sure you want to delete this service?')) return;
 
     try {
-      const token = localStorage.getItem('adminToken') || sessionStorage.getItem('adminToken');
-      const response = await fetch(`http://localhost:5000/api/admin/dashboard/services/${id}`, {
-        method: 'DELETE',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-        },
-      });
-
-      if (response.ok) {
+      const response = await servicesApi.delete(id);
+      if (response.success) {
         await fetchServices();
       }
     } catch (error) {

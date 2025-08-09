@@ -4,6 +4,7 @@ import {
   Plus, Search, Edit, Trash2, Eye, ExternalLink, Code,
   X, Upload, Tag, Calendar, Globe, FlaskRound as Flask
 } from 'lucide-react';
+import { labsApi } from '../../utils/api';
 
 interface Lab {
   _id: string;
@@ -42,16 +43,9 @@ const Labs: React.FC = () => {
 
   const fetchLabs = async () => {
     try {
-      const token = localStorage.getItem('adminToken') || sessionStorage.getItem('adminToken');
-      const response = await fetch('http://localhost:5000/api/admin/dashboard/labs', {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-        },
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        setLabs(data.data.labs);
+      const response = await labsApi.getAll();
+      if (response.success && response.data) {
+        setLabs(response.data.labs);
       }
     } catch (error) {
       console.error('Error fetching labs:', error);
@@ -64,26 +58,15 @@ const Labs: React.FC = () => {
     e.preventDefault();
     
     try {
-      const token = localStorage.getItem('adminToken') || sessionStorage.getItem('adminToken');
-      const formDataToSend = new FormData();
+      // Get uploaded image
+      const imageInput = document.getElementById('image') as HTMLInputElement;
+      const image = imageInput?.files?.[0];
       
-      Object.keys(formData).forEach(key => {
-        formDataToSend.append(key, formData[key as keyof typeof formData]);
-      });
+      const response = editingLab 
+        ? await labsApi.update(editingLab._id, formData, image)
+        : await labsApi.create(formData, image);
 
-      const url = editingLab 
-        ? `http://localhost:5000/api/admin/dashboard/labs/${editingLab._id}`
-        : 'http://localhost:5000/api/admin/dashboard/labs';
-
-      const response = await fetch(url, {
-        method: editingLab ? 'PUT' : 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-        },
-        body: formDataToSend,
-      });
-
-      if (response.ok) {
+      if (response.success) {
         await fetchLabs();
         setShowCreateModal(false);
         setEditingLab(null);
@@ -96,6 +79,11 @@ const Labs: React.FC = () => {
           source_url: '',
           status: 'published'
         });
+        
+        // Reset file input
+        if (imageInput) {
+          imageInput.value = '';
+        }
       }
     } catch (error) {
       console.error('Error saving lab:', error);
@@ -106,15 +94,8 @@ const Labs: React.FC = () => {
     if (!confirm('Are you sure you want to delete this lab project?')) return;
 
     try {
-      const token = localStorage.getItem('adminToken') || sessionStorage.getItem('adminToken');
-      const response = await fetch(`http://localhost:5000/api/admin/dashboard/labs/${id}`, {
-        method: 'DELETE',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-        },
-      });
-
-      if (response.ok) {
+      const response = await labsApi.delete(id);
+      if (response.success) {
         await fetchLabs();
       }
     } catch (error) {

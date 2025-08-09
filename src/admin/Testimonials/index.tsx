@@ -4,6 +4,7 @@ import {
   Plus, Search, Edit, Trash2, Star, User, Building,
   X, Upload, Quote
 } from 'lucide-react';
+import { adminApi } from '../../utils/api';
 
 interface Testimonial {
   _id: string;
@@ -49,16 +50,9 @@ const Testimonials: React.FC = () => {
 
   const fetchTestimonials = async () => {
     try {
-      const token = localStorage.getItem('adminToken') || sessionStorage.getItem('adminToken');
-      const response = await fetch('http://localhost:5000/api/admin/dashboard/testimonials', {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-        },
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        setTestimonials(data.data.testimonials);
+      const response = await adminApi.getTestimonials();
+      if (response.success && response.data) {
+        setTestimonials(response.data.testimonials);
       }
     } catch (error) {
       console.error('Error fetching testimonials:', error);
@@ -71,28 +65,17 @@ const Testimonials: React.FC = () => {
     e.preventDefault();
     
     try {
-      const token = localStorage.getItem('adminToken') || sessionStorage.getItem('adminToken');
-      
       const testimonialData = {
         ...formData,
         results: formData.results.split(',').map(r => r.trim()).filter(r => r),
         rating: parseInt(formData.rating.toString())
       };
 
-      const url = editingTestimonial 
-        ? `http://localhost:5000/api/admin/dashboard/testimonials/${editingTestimonial._id}`
-        : 'http://localhost:5000/api/admin/dashboard/testimonials';
+      const response = editingTestimonial 
+        ? await adminApi.updateTestimonial(editingTestimonial._id, testimonialData)
+        : await adminApi.createTestimonial(testimonialData);
 
-      const response = await fetch(url, {
-        method: editingTestimonial ? 'PUT' : 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(testimonialData),
-      });
-
-      if (response.ok) {
+      if (response.success) {
         await fetchTestimonials();
         setShowCreateModal(false);
         setEditingTestimonial(null);
@@ -119,15 +102,8 @@ const Testimonials: React.FC = () => {
     if (!confirm('Are you sure you want to delete this testimonial?')) return;
 
     try {
-      const token = localStorage.getItem('adminToken') || sessionStorage.getItem('adminToken');
-      const response = await fetch(`http://localhost:5000/api/admin/dashboard/testimonials/${id}`, {
-        method: 'DELETE',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-        },
-      });
-
-      if (response.ok) {
+      const response = await adminApi.deleteTestimonial(id);
+      if (response.success) {
         await fetchTestimonials();
       }
     } catch (error) {

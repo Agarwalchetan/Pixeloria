@@ -4,6 +4,7 @@ import {
   Plus, Search, Filter, Edit, Trash2, Eye, ExternalLink,
   Image, Tag, Calendar, Globe, X, Upload
 } from 'lucide-react';
+import { portfolioApi } from '../../utils/api';
 
 interface Project {
   _id: string;
@@ -43,16 +44,9 @@ const Portfolio: React.FC = () => {
 
   const fetchProjects = async () => {
     try {
-      const token = localStorage.getItem('adminToken');
-      const response = await fetch('http://localhost:5000/api/admin/dashboard/portfolio', {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-        },
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        setProjects(data.data.projects);
+      const response = await portfolioApi.getAll();
+      if (response.success && response.data) {
+        setProjects(response.data.projects);
       }
     } catch (error) {
       console.error('Error fetching projects:', error);
@@ -65,26 +59,15 @@ const Portfolio: React.FC = () => {
     e.preventDefault();
     
     try {
-      const token = localStorage.getItem('adminToken');
-      const formDataToSend = new FormData();
+      // Get uploaded images
+      const imageInput = document.getElementById('images') as HTMLInputElement;
+      const images = imageInput?.files ? Array.from(imageInput.files) : undefined;
       
-      Object.keys(formData).forEach(key => {
-        formDataToSend.append(key, formData[key as keyof typeof formData]);
-      });
+      const response = editingProject 
+        ? await portfolioApi.update(editingProject._id, formData, images)
+        : await portfolioApi.create(formData, images);
 
-      const url = editingProject 
-        ? `http://localhost:5000/api/admin/dashboard/portfolio/${editingProject._id}`
-        : 'http://localhost:5000/api/admin/dashboard/portfolio';
-
-      const response = await fetch(url, {
-        method: editingProject ? 'PUT' : 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-        },
-        body: formDataToSend,
-      });
-
-      if (response.ok) {
+      if (response.success) {
         await fetchProjects();
         setShowCreateModal(false);
         setEditingProject(null);
@@ -97,6 +80,11 @@ const Portfolio: React.FC = () => {
           link: '',
           status: 'published'
         });
+        
+        // Reset file input
+        if (imageInput) {
+          imageInput.value = '';
+        }
       }
     } catch (error) {
       console.error('Error saving project:', error);
@@ -107,15 +95,8 @@ const Portfolio: React.FC = () => {
     if (!confirm('Are you sure you want to delete this project?')) return;
 
     try {
-      const token = localStorage.getItem('adminToken');
-      const response = await fetch(`http://localhost:5000/api/admin/dashboard/portfolio/${id}`, {
-        method: 'DELETE',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-        },
-      });
-
-      if (response.ok) {
+      const response = await portfolioApi.delete(id);
+      if (response.success) {
         await fetchProjects();
       }
     } catch (error) {

@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Users, FileText, FolderOpen, FlaskRound as Flask, Settings, Star, Mail, MessageSquare, TrendingUp, ArrowUpRight, ArrowDownRight, Plus, Eye, Edit, Trash2, Calendar, Clock, Activity, BarChart3 } from 'lucide-react';
 import { authUtils } from '../../utils/auth';
+import { Link } from 'react-router-dom';
 
 interface DashboardStats {
   portfolio: number;
@@ -43,6 +44,12 @@ const Dashboard: React.FC = () => {
   const fetchDashboardData = async () => {
     try {
       const token = authUtils.getToken();
+      if (!token) {
+        console.error('No auth token found');
+        setIsLoading(false);
+        return;
+      }
+
       const response = await fetch('http://localhost:5000/api/admin/dashboard/overview', {
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -54,6 +61,8 @@ const Dashboard: React.FC = () => {
         const data = await response.json();
         setStats(data.data.statistics);
         setRecentActivity(data.data.recent);
+      } else {
+        console.error('Failed to fetch dashboard data:', response.status);
       }
     } catch (error) {
       console.error('Error fetching dashboard data:', error);
@@ -62,6 +71,9 @@ const Dashboard: React.FC = () => {
     }
   };
 
+  // Get current user
+  const adminUser = authUtils.getUser();
+
   const statCards = [
     {
       title: 'Portfolio Projects',
@@ -69,7 +81,8 @@ const Dashboard: React.FC = () => {
       icon: FolderOpen,
       color: 'from-blue-500 to-blue-600',
       change: '+12%',
-      changeType: 'positive'
+      changeType: 'positive',
+      link: '/admin/dashboard/portfolio'
     },
     {
       title: 'Blog Posts',
@@ -77,7 +90,8 @@ const Dashboard: React.FC = () => {
       icon: FileText,
       color: 'from-green-500 to-green-600',
       change: '+8%',
-      changeType: 'positive'
+      changeType: 'positive',
+      link: '/admin/dashboard/blog'
     },
     {
       title: 'Contact Inquiries',
@@ -85,7 +99,8 @@ const Dashboard: React.FC = () => {
       icon: MessageSquare,
       color: 'from-purple-500 to-purple-600',
       change: '+25%',
-      changeType: 'positive'
+      changeType: 'positive',
+      link: '/admin/dashboard/contact-inquiries'
     },
     {
       title: 'Services',
@@ -93,7 +108,8 @@ const Dashboard: React.FC = () => {
       icon: Settings,
       color: 'from-orange-500 to-orange-600',
       change: '+5%',
-      changeType: 'positive'
+      changeType: 'positive',
+      link: '/admin/dashboard/services'
     },
     {
       title: 'Lab Projects',
@@ -101,7 +117,8 @@ const Dashboard: React.FC = () => {
       icon: Flask,
       color: 'from-pink-500 to-pink-600',
       change: '+18%',
-      changeType: 'positive'
+      changeType: 'positive',
+      link: '/admin/dashboard/labs'
     },
     {
       title: 'Admin Users',
@@ -109,7 +126,8 @@ const Dashboard: React.FC = () => {
       icon: Users,
       color: 'from-indigo-500 to-indigo-600',
       change: '+2%',
-      changeType: 'positive'
+      changeType: 'positive',
+      link: '/admin/dashboard/users'
     },
     {
       title: 'Newsletter Subscribers',
@@ -117,7 +135,8 @@ const Dashboard: React.FC = () => {
       icon: Mail,
       color: 'from-teal-500 to-teal-600',
       change: '+15%',
-      changeType: 'positive'
+      changeType: 'positive',
+      link: '/admin/dashboard/newsletter'
     },
     {
       title: 'Testimonials',
@@ -125,7 +144,8 @@ const Dashboard: React.FC = () => {
       icon: Star,
       color: 'from-yellow-500 to-yellow-600',
       change: '+10%',
-      changeType: 'positive'
+      changeType: 'positive',
+      link: '/admin/dashboard/testimonials'
     },
   ];
 
@@ -144,6 +164,18 @@ const Dashboard: React.FC = () => {
     );
   }
 
+  if (!adminUser) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="text-center">
+          <p className="text-gray-600">Unable to load user data</p>
+          <Link to="/admin" className="text-blue-600 hover:text-blue-700 mt-2 inline-block">
+            Return to Login
+          </Link>
+        </div>
+      </div>
+    );
+  }
   return (
     <div className="space-y-8">
       {/* Welcome Section */}
@@ -155,7 +187,7 @@ const Dashboard: React.FC = () => {
           </div>
           <div className="text-right">
             <div className="text-sm text-blue-100">Last login</div>
-            <div className="font-semibold">Today at 2:30 PM</div>
+            <div className="font-semibold">{new Date().toLocaleDateString()}</div>
           </div>
         </div>
       </div>
@@ -168,7 +200,8 @@ const Dashboard: React.FC = () => {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: index * 0.1 }}
-            className="bg-white rounded-xl p-6 shadow-sm border border-gray-100 hover:shadow-md transition-shadow"
+            className="bg-white rounded-xl p-6 shadow-sm border border-gray-100 hover:shadow-md transition-shadow cursor-pointer"
+            onClick={() => window.location.href = card.link}
           >
             <div className="flex items-center justify-between mb-4">
               <div className={`w-12 h-12 rounded-xl bg-gradient-to-r ${card.color} flex items-center justify-center`}>
@@ -198,16 +231,17 @@ const Dashboard: React.FC = () => {
           {quickActions.map((action, index) => (
             <motion.a
               key={action.label}
+                to={action.path}
               href={action.path}
               initial={{ opacity: 0, scale: 0.9 }}
               animate={{ opacity: 1, scale: 1 }}
-              transition={{ delay: index * 0.1 }}
-              className={`flex items-center space-x-3 p-4 rounded-xl border-2 border-dashed border-${action.color}-200 hover:border-${action.color}-300 hover:bg-${action.color}-50 transition-all duration-200 group`}
-            >
-              <div className={`w-10 h-10 rounded-lg bg-${action.color}-100 flex items-center justify-center group-hover:bg-${action.color}-200 transition-colors`}>
+                className="flex items-center space-x-3 p-4 rounded-xl border-2 border-dashed border-blue-200 hover:border-blue-300 hover:bg-blue-50 transition-all duration-200 group"
+              <Link
+                <div className="w-10 h-10 rounded-lg bg-blue-100 flex items-center justify-center group-hover:bg-blue-200 transition-colors">
+                  <action.icon size={20} className="text-blue-600" />
                 <action.icon size={20} className={`text-${action.color}-600`} />
               </div>
-              <span className="font-medium text-gray-700 group-hover:text-gray-900">{action.label}</span>
+              </Link>
             </motion.a>
           ))}
         </div>
@@ -219,45 +253,56 @@ const Dashboard: React.FC = () => {
         <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100">
           <div className="flex items-center justify-between mb-6">
             <h2 className="text-xl font-bold text-gray-900">Recent Contact Inquiries</h2>
-            <a
-              href="/admin/dashboard/contact-inquiries"
+            <Link
+              to="/admin/dashboard/contact-inquiries"
               className="text-blue-600 hover:text-blue-700 text-sm font-medium"
             >
               View All
-            </a>
+            </Link>
           </div>
           <div className="space-y-4">
-            {recentActivity.contacts.slice(0, 5).map((contact, index) => (
+            {recentActivity.contacts && recentActivity.contacts.length > 0 ? (
+              recentActivity.contacts.slice(0, 5).map((contact, index) => (
+                <motion.div
+                  key={contact._id}
+                  initial={{ opacity: 0, x: -20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ delay: index * 0.1 }}
+                  className="flex items-center justify-between p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors"
+                >
+                  <div className="flex-1">
+                    <div className="font-medium text-gray-900">
+                      {contact.first_name} {contact.last_name}
+                    </div>
+                    <div className="text-sm text-gray-500">{contact.email}</div>
+                    <div className="text-xs text-gray-400 mt-1">
+                      {new Date(contact.createdAt).toLocaleDateString()}
+                    </div>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                      contact.status === 'new' ? 'bg-green-100 text-green-800' :
+                      contact.status === 'replied' ? 'bg-blue-100 text-blue-800' :
+                      'bg-gray-100 text-gray-800'
+                    }`}>
+                      {contact.status}
+                    </span>
+                    <button className="p-1 text-gray-400 hover:text-gray-600">
+                      <Eye size={16} />
+                    </button>
+                  </div>
+                </motion.div>
+              ))
+            ) : (
               <motion.div
-                key={contact._id}
                 initial={{ opacity: 0, x: -20 }}
                 animate={{ opacity: 1, x: 0 }}
-                transition={{ delay: index * 0.1 }}
-                className="flex items-center justify-between p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors"
+                className="text-center py-8 text-gray-500"
               >
-                <div className="flex-1">
-                  <div className="font-medium text-gray-900">
-                    {contact.first_name} {contact.last_name}
-                  </div>
-                  <div className="text-sm text-gray-500">{contact.email}</div>
-                  <div className="text-xs text-gray-400 mt-1">
-                    {new Date(contact.createdAt).toLocaleDateString()}
-                  </div>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                    contact.status === 'new' ? 'bg-green-100 text-green-800' :
-                    contact.status === 'replied' ? 'bg-blue-100 text-blue-800' :
-                    'bg-gray-100 text-gray-800'
-                  }`}>
-                    {contact.status}
-                  </span>
-                  <button className="p-1 text-gray-400 hover:text-gray-600">
-                    <Eye size={16} />
-                  </button>
-                </div>
+                <MessageSquare className="w-8 h-8 text-gray-400 mx-auto mb-2" />
+                <p>No recent contact inquiries</p>
               </motion.div>
-            ))}
+            )}
           </div>
         </div>
 
@@ -265,41 +310,52 @@ const Dashboard: React.FC = () => {
         <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100">
           <div className="flex items-center justify-between mb-6">
             <h2 className="text-xl font-bold text-gray-900">Recent Blog Posts</h2>
-            <a
-              href="/admin/dashboard/blog"
+            <Link
+              to="/admin/dashboard/blog"
               className="text-blue-600 hover:text-blue-700 text-sm font-medium"
             >
               View All
-            </a>
+            </Link>
           </div>
           <div className="space-y-4">
-            {recentActivity.blogs.slice(0, 5).map((post, index) => (
+            {recentActivity.blogs && recentActivity.blogs.length > 0 ? (
+              recentActivity.blogs.slice(0, 5).map((post, index) => (
+                <motion.div
+                  key={post._id}
+                  initial={{ opacity: 0, x: -20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ delay: index * 0.1 }}
+                  className="flex items-center justify-between p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors"
+                >
+                  <div className="flex-1">
+                    <div className="font-medium text-gray-900">{post.title}</div>
+                    <div className="text-sm text-gray-500">By {post.author}</div>
+                    <div className="text-xs text-gray-400 mt-1">
+                      {new Date(post.createdAt).toLocaleDateString()}
+                    </div>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                      post.status === 'published' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'
+                    }`}>
+                      {post.status}
+                    </span>
+                    <button className="p-1 text-gray-400 hover:text-gray-600">
+                      <Edit size={16} />
+                    </button>
+                  </div>
+                </motion.div>
+              ))
+            ) : (
               <motion.div
-                key={post._id}
                 initial={{ opacity: 0, x: -20 }}
                 animate={{ opacity: 1, x: 0 }}
-                transition={{ delay: index * 0.1 }}
-                className="flex items-center justify-between p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors"
+                className="text-center py-8 text-gray-500"
               >
-                <div className="flex-1">
-                  <div className="font-medium text-gray-900">{post.title}</div>
-                  <div className="text-sm text-gray-500">By {post.author}</div>
-                  <div className="text-xs text-gray-400 mt-1">
-                    {new Date(post.createdAt).toLocaleDateString()}
-                  </div>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                    post.status === 'published' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'
-                  }`}>
-                    {post.status}
-                  </span>
-                  <button className="p-1 text-gray-400 hover:text-gray-600">
-                    <Edit size={16} />
-                  </button>
-                </div>
+                <FileText className="w-8 h-8 text-gray-400 mx-auto mb-2" />
+                <p>No recent blog posts</p>
               </motion.div>
-            ))}
+            )}
           </div>
         </div>
       </div>
