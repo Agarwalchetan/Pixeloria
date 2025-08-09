@@ -47,3 +47,4 @@ src/pages/labs/NeuralNetworkViz.tsx
 
 # 🚧 Optional: Git Ignore Matching (optional)
 .git/
+.gitignore
