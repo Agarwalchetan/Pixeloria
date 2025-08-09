@@ -14,7 +14,7 @@ import NotFound from './pages/NotFound';
 
 // Admin Components
 import AdminLogin from './pages/AdminLogin';
-import AdminDashboard from './pages/AdminDashboard';
+import AdminLayout from './admin/AdminLayout';
 
 // Admin Tab Components
 import Dashboard from './admin/Dashboard';
@@ -41,6 +41,7 @@ import NeuralNetworkViz from './pages/labs/NeuralNetworkViz';
 function App() {
   return (
     <Routes>
+      {/* Public Routes */}
       <Route path="/" element={<Layout />}>
         <Route index element={<Home />} />
         <Route path="about" element={<About />} />
@@ -51,13 +52,17 @@ function App() {
         <Route path="contact" element={<Contact />} />
         <Route path="*" element={<NotFound />} />
       </Route>
+      
+      {/* Cost Estimator - Standalone */}
       <Route path="/cost-estimator" element={<CostEstimator />} />
       
-      {/* Admin Routes */}
+      {/* Admin Login */}
       <Route path="/admin" element={<AdminLogin />} />
+      
+      {/* Protected Admin Routes */}
       <Route path="/admin/dashboard" element={
         <ProtectedRoute requireAdmin={true}>
-          <AdminDashboard />
+          <AdminLayout />
         </ProtectedRoute>
       }>
         <Route index element={<Dashboard />} />
