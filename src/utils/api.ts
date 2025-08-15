@@ -27,7 +27,17 @@ export async function fetchApi<T>(
       ...options,
     });
 
-    const data = await response.json();
+    // Check if response is JSON
+    const contentType = response.headers.get('content-type');
+    let data;
+    
+    if (contentType && contentType.includes('application/json')) {
+      data = await response.json();
+    } else {
+      // Handle non-JSON responses
+      const text = await response.text();
+      data = { success: false, message: text || 'Invalid response format' };
+    }
 
     if (!response.ok) {
       throw new Error(data.message || `HTTP error! status: ${response.status}`);
@@ -36,7 +46,11 @@ export async function fetchApi<T>(
     return data;
   } catch (error) {
     console.error('API Error:', error);
-    throw error;
+    // Return a proper error response instead of throwing
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Unknown error occurred'
+    };
   }
 }
 
@@ -57,7 +71,16 @@ export async function fetchApiWithFormData<T>(
       ...options,
     });
 
-    const data = await response.json();
+    // Check if response is JSON
+    const contentType = response.headers.get('content-type');
+    let data;
+    
+    if (contentType && contentType.includes('application/json')) {
+      data = await response.json();
+    } else {
+      const text = await response.text();
+      data = { success: false, message: text || 'Invalid response format' };
+    }
 
     if (!response.ok) {
       throw new Error(data.message || `HTTP error! status: ${response.status}`);
@@ -66,7 +89,10 @@ export async function fetchApiWithFormData<T>(
     return data;
   } catch (error) {
     console.error('API Error:', error);
-    throw error;
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Unknown error occurred'
+    };
   }
 }
 
