@@ -1,13 +1,31 @@
-import React, { useState, useEffect } from 'react';
-import { motion } from 'framer-motion';
-import { Link } from 'react-router-dom';
-import { 
-  Users, FileText, FolderOpen, FlaskRound as Flask, Settings, Star, Mail, MessageSquare, 
-  TrendingUp, ArrowUpRight, ArrowDownRight, Plus, Eye, Edit, Trash2, Calendar, Clock, 
-  Activity, BarChart3, AlertCircle, RefreshCw
-} from 'lucide-react';
-import { adminApi } from '../../utils/api';
-import { authUtils } from '../../utils/auth';
+import React, { useState, useEffect } from "react";
+import { motion } from "framer-motion";
+import { Link } from "react-router-dom";
+import {
+  Users,
+  FileText,
+  FolderOpen,
+  FlaskRound as Flask,
+  Settings,
+  Star,
+  Mail,
+  MessageSquare,
+  TrendingUp,
+  ArrowUpRight,
+  ArrowDownRight,
+  Plus,
+  Eye,
+  Edit,
+  Trash2,
+  Calendar,
+  Clock,
+  Activity,
+  BarChart3,
+  AlertCircle,
+  RefreshCw,
+} from "lucide-react";
+import { adminApi } from "../../utils/api";
+import { authUtils } from "../../utils/auth";
 
 interface DashboardStats {
   portfolio: number;
@@ -48,7 +66,7 @@ const Dashboard: React.FC = () => {
     // Get admin user info
     const user = authUtils.getUser();
     setAdminUser(user);
-    
+
     // Fetch dashboard data
     fetchDashboardData();
   }, []);
@@ -57,31 +75,37 @@ const Dashboard: React.FC = () => {
     try {
       setIsLoading(true);
       setError(null);
-      
+
       const response = await adminApi.getDashboardOverview();
-      
+
       if (response.success && response.data) {
-        setStats(response.data.statistics || {
-          portfolio: 0,
-          blogs: 0,
-          contacts: 0,
-          services: 0,
-          labs: 0,
-          users: 0,
-          newsletter: 0,
-          testimonials: 0,
-        });
-        setRecentActivity(response.data.recent || {
-          contacts: [],
-          blogs: [],
-        });
+        setStats(
+          response.data.statistics || {
+            portfolio: 0,
+            blogs: 0,
+            contacts: 0,
+            services: 0,
+            labs: 0,
+            users: 0,
+            newsletter: 0,
+            testimonials: 0,
+          }
+        );
+        setRecentActivity(
+          response.data.recent || {
+            contacts: [],
+            blogs: [],
+          }
+        );
       } else {
-        throw new Error('Failed to fetch dashboard data');
+        throw new Error("Failed to fetch dashboard data");
       }
     } catch (err) {
-      console.error('Error fetching dashboard data:', err);
-      setError(err instanceof Error ? err.message : 'Failed to load dashboard data');
-      
+      console.error("Error fetching dashboard data:", err);
+      setError(
+        err instanceof Error ? err.message : "Failed to load dashboard data"
+      );
+
       // Set fallback data
       setStats({
         portfolio: 12,
@@ -96,22 +120,22 @@ const Dashboard: React.FC = () => {
       setRecentActivity({
         contacts: [
           {
-            _id: '1',
-            first_name: 'John',
-            last_name: 'Doe',
-            email: 'john@example.com',
-            status: 'new',
-            createdAt: new Date().toISOString()
-          }
+            _id: "1",
+            first_name: "John",
+            last_name: "Doe",
+            email: "john@example.com",
+            status: "new",
+            createdAt: new Date().toISOString(),
+          },
         ],
         blogs: [
           {
-            _id: '1',
-            title: 'Sample Blog Post',
-            author: 'Admin',
-            status: 'published',
-            createdAt: new Date().toISOString()
-          }
+            _id: "1",
+            title: "Sample Blog Post",
+            author: "Admin",
+            status: "published",
+            createdAt: new Date().toISOString(),
+          },
         ],
       });
     } finally {
@@ -121,84 +145,104 @@ const Dashboard: React.FC = () => {
 
   const statCards = [
     {
-      title: 'Portfolio Projects',
+      title: "Portfolio Projects",
       value: stats.portfolio,
       icon: FolderOpen,
-      color: 'from-blue-500 to-blue-600',
-      change: '+12%',
-      changeType: 'positive',
-      link: '/admin/dashboard/portfolio'
+      color: "from-blue-500 to-blue-600",
+      change: "+12%",
+      changeType: "positive",
+      link: "/admin/dashboard/portfolio",
     },
     {
-      title: 'Blog Posts',
+      title: "Blog Posts",
       value: stats.blogs,
       icon: FileText,
-      color: 'from-green-500 to-green-600',
-      change: '+8%',
-      changeType: 'positive',
-      link: '/admin/dashboard/blog'
+      color: "from-green-500 to-green-600",
+      change: "+8%",
+      changeType: "positive",
+      link: "/admin/dashboard/blog",
     },
     {
-      title: 'Contact Inquiries',
+      title: "Contact Inquiries",
       value: stats.contacts,
       icon: MessageSquare,
-      color: 'from-purple-500 to-purple-600',
-      change: '+25%',
-      changeType: 'positive',
-      link: '/admin/dashboard/contact-inquiries'
+      color: "from-purple-500 to-purple-600",
+      change: "+25%",
+      changeType: "positive",
+      link: "/admin/dashboard/contact-inquiries",
     },
     {
-      title: 'Services',
+      title: "Services",
       value: stats.services,
       icon: Settings,
-      color: 'from-orange-500 to-orange-600',
-      change: '+5%',
-      changeType: 'positive',
-      link: '/admin/dashboard/services'
+      color: "from-orange-500 to-orange-600",
+      change: "+5%",
+      changeType: "positive",
+      link: "/admin/dashboard/services",
     },
     {
-      title: 'Lab Projects',
+      title: "Lab Projects",
       value: stats.labs,
       icon: Flask,
-      color: 'from-pink-500 to-pink-600',
-      change: '+18%',
-      changeType: 'positive',
-      link: '/admin/dashboard/labs'
+      color: "from-pink-500 to-pink-600",
+      change: "+18%",
+      changeType: "positive",
+      link: "/admin/dashboard/labs",
     },
     {
-      title: 'Admin Users',
+      title: "Admin Users",
       value: stats.users,
       icon: Users,
-      color: 'from-indigo-500 to-indigo-600',
-      change: '+2%',
-      changeType: 'positive',
-      link: '/admin/dashboard/users'
+      color: "from-indigo-500 to-indigo-600",
+      change: "+2%",
+      changeType: "positive",
+      link: "/admin/dashboard/users",
     },
     {
-      title: 'Newsletter Subscribers',
+      title: "Newsletter Subscribers",
       value: stats.newsletter,
       icon: Mail,
-      color: 'from-teal-500 to-teal-600',
-      change: '+15%',
-      changeType: 'positive',
-      link: '/admin/dashboard/newsletter'
+      color: "from-teal-500 to-teal-600",
+      change: "+15%",
+      changeType: "positive",
+      link: "/admin/dashboard/newsletter",
     },
     {
-      title: 'Testimonials',
+      title: "Testimonials",
       value: stats.testimonials,
       icon: Star,
-      color: 'from-yellow-500 to-yellow-600',
-      change: '+10%',
-      changeType: 'positive',
-      link: '/admin/dashboard/testimonials'
+      color: "from-yellow-500 to-yellow-600",
+      change: "+10%",
+      changeType: "positive",
+      link: "/admin/dashboard/testimonials",
     },
   ];
 
   const quickActions = [
-    { label: 'Add Portfolio Project', path: '/admin/dashboard/portfolio', icon: Plus, color: 'blue' },
-    { label: 'Write Blog Post', path: '/admin/dashboard/blog', icon: Plus, color: 'green' },
-    { label: 'Create Lab Project', path: '/admin/dashboard/labs', icon: Plus, color: 'purple' },
-    { label: 'Add Service', path: '/admin/dashboard/services', icon: Plus, color: 'orange' },
+    {
+      label: "Add Portfolio Project",
+      path: "/admin/dashboard/portfolio",
+      icon: Plus,
+      color: "blue",
+    },
+    {
+      label: "Write Blog Post",
+      path: "/admin/dashboard/blog",
+      icon: Plus,
+      color: "green",
+    },
+    {
+      label: "Create Lab Project",
+      path: "/admin/dashboard/labs",
+      icon: Plus,
+      color: "purple",
+    },
+    {
+      label: "Add Service",
+      path: "/admin/dashboard/services",
+      icon: Plus,
+      color: "orange",
+    },
   ];
 
   if (isLoading) {
@@ -222,8 +266,8 @@ const Dashboard: React.FC = () => {
             <div className="flex-1">
               <h3 className="font-medium text-yellow-800">Connection Notice</h3>
               <p className="text-sm text-yellow-700 mt-1">
-                {error}. Showing sample data. 
-                <button 
+                {error}. Showing sample data.
+                <button
                   onClick={fetchDashboardData}
                   className="ml-2 text-yellow-800 underline hover:text-yellow-900"
                 >
@@ -246,17 +290,19 @@ const Dashboard: React.FC = () => {
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-3xl font-bold mb-2">
-              Welcome back, {adminUser?.name || 'Admin'}!
+              Welcome back, {adminUser?.name || "Admin"}!
             </h1>
-            <p className="text-blue-100">Here's what's happening with your website today.</p>
+            <p className="text-blue-100">
+              Here's what's happening with your website today.
+            </p>
           </div>
           <div className="text-right">
             <div className="text-sm text-blue-100">Last login</div>
             <div className="font-semibold">
-              {new Date().toLocaleDateString('en-US', { 
-                weekday: 'short', 
-                hour: '2-digit', 
-                minute: '2-digit' 
+              {new Date().toLocaleDateString("en-US", {
+                weekday: "short",
+                hour: "2-digit",
+                minute: "2-digit",
               })}
             </div>
           </div>
@@ -275,13 +321,19 @@ const Dashboard: React.FC = () => {
           >
             <Link to={card.link} className="block">
               <div className="flex items-center justify-between mb-4">
-                <div className={`w-12 h-12 rounded-xl bg-gradient-to-r ${card.color} flex items-center justify-center group-hover:scale-110 transition-transform duration-300`}>
+                <div
+                  className={`w-12 h-12 rounded-xl bg-gradient-to-r ${card.color} flex items-center justify-center group-hover:scale-110 transition-transform duration-300`}
+                >
                   <card.icon className="w-6 h-6 text-white" />
                 </div>
-                <div className={`flex items-center space-x-1 text-sm ${
-                  card.changeType === 'positive' ? 'text-green-600' : 'text-red-600'
-                }`}>
-                  {card.changeType === 'positive' ? (
+                <div
+                  className={`flex items-center space-x-1 text-sm ${
+                    card.changeType === "positive"
+                      ? "text-green-600"
+                      : "text-red-600"
+                  }`}
+                >
+                  {card.changeType === "positive" ? (
                     <ArrowUpRight size={16} />
                   ) : (
                     <ArrowDownRight size={16} />
@@ -314,24 +366,38 @@ const Dashboard: React.FC = () => {
               <Link
                 to={action.path}
                 className={`flex items-center space-x-3 p-4 rounded-xl border-2 border-dashed transition-all duration-200 group hover:shadow-md ${
-                  action.color === 'blue' ? 'border-blue-200 hover:border-blue-300 hover:bg-blue-50' :
-                  action.color === 'green' ? 'border-green-200 hover:border-green-300 hover:bg-green-50' :
-                  action.color === 'purple' ? 'border-purple-200 hover:border-purple-300 hover:bg-purple-50' :
-                  'border-orange-200 hover:border-orange-300 hover:bg-orange-50'
+                  action.color === "blue"
+                    ? "border-blue-200 hover:border-blue-300 hover:bg-blue-50"
+                    : action.color === "green"
+                    ? "border-green-200 hover:border-green-300 hover:bg-green-50"
+                    : action.color === "purple"
+                    ? "border-purple-200 hover:border-purple-300 hover:bg-purple-50"
+                    : "border-orange-200 hover:border-orange-300 hover:bg-orange-50"
                 }`}
               >
-                <div className={`w-10 h-10 rounded-lg flex items-center justify-center transition-colors ${
-                  action.color === 'blue' ? 'bg-blue-100 group-hover:bg-blue-200' :
-                  action.color === 'green' ? 'bg-green-100 group-hover:bg-green-200' :
-                  action.color === 'purple' ? 'bg-purple-100 group-hover:bg-purple-200' :
-                  'bg-orange-100 group-hover:bg-orange-200'
-                }`}>
-                  <action.icon size={20} className={
-                    action.color === 'blue' ? 'text-blue-600' :
-                    action.color === 'green' ? 'text-green-600' :
-                    action.color === 'purple' ? 'text-purple-600' :
-                    'text-orange-600'
-                  } />
+                <div
+                  className={`w-10 h-10 rounded-lg flex items-center justify-center transition-colors ${
+                    action.color === "blue"
+                      ? "bg-blue-100 group-hover:bg-blue-200"
+                      : action.color === "green"
+                      ? "bg-green-100 group-hover:bg-green-200"
+                      : action.color === "purple"
+                      ? "bg-purple-100 group-hover:bg-purple-200"
+                      : "bg-orange-100 group-hover:bg-orange-200"
+                  }`}
+                >
+                  <action.icon
+                    size={20}
+                    className={
+                      action.color === "blue"
+                        ? "text-blue-600"
+                        : action.color === "green"
+                        ? "text-green-600"
+                        : action.color === "purple"
+                        ? "text-purple-600"
+                        : "text-orange-600"
+                    }
+                  />
                 </div>
                 <span className="font-medium text-gray-700 group-hover:text-gray-900">
                   {action.label}
@@ -347,7 +413,9 @@ const Dashboard: React.FC = () => {
         {/* Recent Contacts */}
         <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100">
           <div className="flex items-center justify-between mb-6">
-            <h2 className="text-xl font-bold text-gray-900">Recent Contact Inquiries</h2>
+            <h2 className="text-xl font-bold text-gray-900">
+              Recent Contact Inquiries
+            </h2>
             <Link
               to="/admin/dashboard/contact-inquiries"
               className="text-blue-600 hover:text-blue-700 text-sm font-medium flex items-center"
@@ -376,11 +444,15 @@ const Dashboard: React.FC = () => {
                     </div>
                   </div>
                   <div className="flex items-center space-x-2">
-                    <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                      contact.status === 'new' ? 'bg-green-100 text-green-800' :
-                      contact.status === 'replied' ? 'bg-blue-100 text-blue-800' :
-                      'bg-gray-100 text-gray-800'
-                    }`}>
+                    <span
+                      className={`px-2 py-1 rounded-full text-xs font-medium ${
+                        contact.status === "new"
+                          ? "bg-green-100 text-green-800"
+                          : contact.status === "replied"
+                          ? "bg-blue-100 text-blue-800"
+                          : "bg-gray-100 text-gray-800"
+                      }`}
+                    >
                       {contact.status}
                     </span>
                     <Link
@@ -404,7 +476,9 @@ const Dashboard: React.FC = () => {
         {/* Recent Blog Posts */}
         <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100">
           <div className="flex items-center justify-between mb-6">
-            <h2 className="text-xl font-bold text-gray-900">Recent Blog Posts</h2>
+            <h2 className="text-xl font-bold text-gray-900">
+              Recent Blog Posts
+            </h2>
             <Link
               to="/admin/dashboard/blog"
               className="text-blue-600 hover:text-blue-700 text-sm font-medium flex items-center"
@@ -424,16 +498,24 @@ const Dashboard: React.FC = () => {
                   className="flex items-center justify-between p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors"
                 >
                   <div className="flex-1">
-                    <div className="font-medium text-gray-900">{post.title}</div>
-                    <div className="text-sm text-gray-500">By {post.author}</div>
+                    <div className="font-medium text-gray-900">
+                      {post.title}
+                    </div>
+                    <div className="text-sm text-gray-500">
+                      By {post.author}
+                    </div>
                     <div className="text-xs text-gray-400 mt-1">
                       {new Date(post.createdAt).toLocaleDateString()}
                     </div>
                   </div>
                   <div className="flex items-center space-x-2">
-                    <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                      post.status === 'published' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'
-                    }`}>
+                    <span
+                      className={`px-2 py-1 rounded-full text-xs font-medium ${
+                        post.status === "published"
+                          ? "bg-green-100 text-green-800"
+                          : "bg-yellow-100 text-yellow-800"
+                      }`}
+                    >
                       {post.status}
                     </span>
                     <Link
@@ -473,7 +555,7 @@ const Dashboard: React.FC = () => {
               <div className="text-sm text-gray-500">Uptime</div>
             </div>
           </motion.div>
-          
+
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -488,7 +570,7 @@ const Dashboard: React.FC = () => {
               <div className="text-sm text-gray-500">Avg Response Time</div>
             </div>
           </motion.div>
-          
+
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -502,58 +584,75 @@ const Dashboard: React.FC = () => {
               <div className="text-2xl font-bold text-gray-900">+15%</div>
               <div className="text-sm text-gray-500">Monthly Growth</div>
             </div>
-          </div>
+          </motion.div>
         </div>
       </div>
 
       {/* Performance Metrics */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100">
-          <h3 className="text-lg font-bold text-gray-900 mb-4">Popular Pages</h3>
+          <h3 className="text-lg font-bold text-gray-900 mb-4">
+            Popular Pages
+          </h3>
           <div className="space-y-3">
             {[
-              { page: '/labs/color-generator', views: 1245 },
-              { page: '/cost-estimator', views: 987 },
-              { page: '/portfolio', views: 876 },
-              { page: '/services', views: 654 },
+              { page: "/labs/color-generator", views: 1245 },
+              { page: "/cost-estimator", views: 987 },
+              { page: "/portfolio", views: 876 },
+              { page: "/services", views: 654 },
             ].map((page, index) => (
-              <div key={index} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                <span className="text-sm font-medium text-gray-900">{page.page}</span>
-                <span className="text-sm text-gray-600">{page.views} views</span>
+              <div
+                key={index}
+                className="flex items-center justify-between p-3 bg-gray-50 rounded-lg"
+              >
+                <span className="text-sm font-medium text-gray-900">
+                  {page.page}
+                </span>
+                <span className="text-sm text-gray-600">
+                  {page.views} views
+                </span>
               </div>
             ))}
           </div>
         </div>
 
         <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100">
-          <h3 className="text-lg font-bold text-gray-900 mb-4">Recent Activity</h3>
+          <h3 className="text-lg font-bold text-gray-900 mb-4">
+            Recent Activity
+          </h3>
           <div className="space-y-3">
             <div className="flex items-center space-x-3 p-3 bg-blue-50 rounded-lg">
               <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center">
                 <MessageSquare className="w-4 h-4 text-blue-600" />
               </div>
               <div className="flex-1">
-                <p className="text-sm font-medium text-gray-900">New contact inquiry</p>
+                <p className="text-sm font-medium text-gray-900">
+                  New contact inquiry
+                </p>
                 <p className="text-xs text-gray-500">2 minutes ago</p>
               </div>
             </div>
-            
+
             <div className="flex items-center space-x-3 p-3 bg-green-50 rounded-lg">
               <div className="w-8 h-8 rounded-full bg-green-100 flex items-center justify-center">
                 <FileText className="w-4 h-4 text-green-600" />
               </div>
               <div className="flex-1">
-                <p className="text-sm font-medium text-gray-900">Blog post published</p>
+                <p className="text-sm font-medium text-gray-900">
+                  Blog post published
+                </p>
                 <p className="text-xs text-gray-500">1 hour ago</p>
               </div>
             </div>
-            
+
             <div className="flex items-center space-x-3 p-3 bg-purple-50 rounded-lg">
               <div className="w-8 h-8 rounded-full bg-purple-100 flex items-center justify-center">
                 <Flask className="w-4 h-4 text-purple-600" />
               </div>
               <div className="flex-1">
-                <p className="text-sm font-medium text-gray-900">Lab project updated</p>
+                <p className="text-sm font-medium text-gray-900">
+                  Lab project updated
+                </p>
                 <p className="text-xs text-gray-500">3 hours ago</p>
               </div>
             </div>
