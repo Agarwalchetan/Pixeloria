@@ -32,9 +32,11 @@ const __dirname = path.dirname(__filename);
 // Load environment variables
 dotenv.config({ path: path.resolve(__dirname, '../.env') });
 
-// Validate MONGODB_URI presence
-if (!process.env.MONGODB_URI) {
-  console.error('❌ MONGODB_URI not defined in .env file.');
+// Validate MongoDB URI presence
+const mongoUri = process.env.MONGODB_URI || process.env.MONGO_URI;
+if (!mongoUri) {
+  console.error('❌ MongoDB URI not defined in .env file. Please set MONGODB_URI or MONGO_URI.');
+  console.log('Available environment variables:', Object.keys(process.env).filter(key => key.includes('MONGO')));
   process.exit(1);
 }
 
