@@ -62,7 +62,7 @@ const Newsletter: React.FC = () => {
   };
 
   const handleDeleteSubscriber = async (id: string) => {
-    if (!confirm('Are you sure you want to remove this subscriber?')) return;
+    if (!confirm('Are you sure you want to unsubscribe this user?')) return;
 
     try {
       const response = await adminApi.deleteNewsletterSubscriber(id);
@@ -219,7 +219,8 @@ const Newsletter: React.FC = () => {
                       </a>
                       <button
                         onClick={() => handleDeleteSubscriber(subscriber._id)}
-                        className="p-2 text-gray-400 hover:text-red-600 transition-colors"
+                        className="p-2 text-gray-400 hover:text-orange-600 transition-colors"
+                        title="Unsubscribe user"
                       >
                         <Trash2 size={16} />
                       </button>

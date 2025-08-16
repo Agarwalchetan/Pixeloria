@@ -15,6 +15,8 @@ const router = express.Router();
  *   post:
  *     summary: Register a new user
  *     tags: [Authentication]
+*     security:
+*       - bearerAuth: []
  *     requestBody:
  *       required: true
  *       content:
@@ -43,8 +45,33 @@ const router = express.Router();
  *         description: Validation error or user already exists
  */
 router.post('/register', validate(schemas.register), async (req, res, next) => {
+  // Check if request is from authenticated admin for creating admin users
+  const authHeader = req.headers['authorization'];
+  const token = authHeader && authHeader.split(' ')[1];
+  
+  let isAdminCreating = false;
+  if (token) {
+    try {
+      const decoded = jwt.verify(token, process.env.JWT_SECRET);
+      const adminUser = await User.findById(decoded.userId);
+      if (adminUser && adminUser.role === 'admin') {
+        isAdminCreating = true;
+      }
+    } catch (error) {
+      // Token invalid, continue as regular registration
+    }
+  }
+
   try {
     const { name, email, password, role = 'client' } = req.body;
+
+    // Only allow admin role creation by existing admins
+    if (role === 'admin' && !isAdminCreating) {
+      return res.status(403).json({
+        success: false,
+        message: 'Only existing admin users can create new admin accounts',
+      });
+    }
 
     // Check if user already exists
     const existingUser = await User.findOne({ email });

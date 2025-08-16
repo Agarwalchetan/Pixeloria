@@ -4,16 +4,45 @@ import {
   Code, Mail, Phone, MapPin,
   Linkedin, Twitter, Github, Facebook, Instagram, Beaker
 } from 'lucide-react';
+import { contactApi } from '../utils/api';
 
 const Footer: React.FC = () => {
   const currentYear = useMemo(() => new Date().getFullYear(), []);
   const [showIcons, setShowIcons] = useState(false);
+  const [newsletterEmail, setNewsletterEmail] = useState('');
+  const [isSubscribing, setIsSubscribing] = useState(false);
+  const [subscriptionStatus, setSubscriptionStatus] = useState<'idle' | 'success' | 'error'>('idle');
+  const [errorMessage, setErrorMessage] = useState('');
 
   useEffect(() => {
     const timeout = setTimeout(() => setShowIcons(true), 300); // Lazy render icons
     return () => clearTimeout(timeout);
   }, []);
 
+  const handleNewsletterSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newsletterEmail.trim()) return;
+
+    setIsSubscribing(true);
+    setSubscriptionStatus('idle');
+    setErrorMessage('');
+
+    try {
+      const response = await contactApi.subscribeNewsletter(newsletterEmail);
+      
+      if (response.success) {
+        setSubscriptionStatus('success');
+        setNewsletterEmail('');
+      } else {
+        throw new Error(response.error || 'Subscription failed');
+      }
+    } catch (error) {
+      setSubscriptionStatus('error');
+      setErrorMessage(error instanceof Error ? error.message : 'Failed to subscribe');
+    } finally {
+      setIsSubscribing(false);
+    }
+  };
   return (
     <footer className="bg-gray-900 border-t border-gray-800">
       <div className="container-custom py-12 md:py-16">
@@ -114,14 +143,42 @@ const Footer: React.FC = () => {
               <h3 className="text-xl font-bold mb-2 text-white">Subscribe to our newsletter</h3>
               <p className="text-gray-400">Stay updated with our latest news and insights</p>
             </div>
-            <div className="flex flex-col sm:flex-row">
+            <form onSubmit={handleNewsletterSubmit} className="flex flex-col sm:flex-row">
               <input
                 type="email"
                 placeholder="Your email address"
+                value={newsletterEmail}
+                onChange={(e) => setNewsletterEmail(e.target.value)}
                 className="px-4 py-3 mb-2 sm:mb-0 sm:mr-2 bg-gray-800 border border-gray-700 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-white placeholder-gray-400"
+                required
+                disabled={isSubscribing}
               />
-              <button className="btn-primary">Subscribe</button>
+              <button 
+                type="submit"
+                disabled={isSubscribing || !newsletterEmail.trim()}
+                className={`btn-primary ${isSubscribing ? 'opacity-75 cursor-not-allowed' : ''}`}
+              >
+                {isSubscribing ? 'Subscribing...' : 'Subscribe'}
+              </button>
+            </form>
+          </div>
+          
+          {/* Subscription Status Messages */}
+          {subscriptionStatus === 'success' && (
+            <div className="mt-4 p-3 bg-green-600/20 border border-green-500/30 rounded-lg">
+              <p className="text-green-400 text-sm">
+                ✅ Successfully subscribed! Thank you for joining our newsletter.
+              </p>
             </div>
+          )}
+          
+          {subscriptionStatus === 'error' && (
+            <div className="mt-4 p-3 bg-red-600/20 border border-red-500/30 rounded-lg">
+              <p className="text-red-400 text-sm">
+                ❌ {errorMessage || 'Subscription failed. Please try again.'}
+              </p>
+            </div>
+          )}
           </div>
         </div>
 

@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Plus, Search, Edit, Trash2, Shield, User, Mail,
-  X, AlertTriangle, Crown, Users as UsersIcon
+  X, AlertTriangle, Crown, Users as UsersIcon, CheckCircle
 } from 'lucide-react';
 import { adminApi } from '../../utils/api';
 
@@ -27,6 +27,9 @@ const Users: React.FC = () => {
     password: '',
     role: 'admin'
   });
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitStatus, setSubmitStatus] = useState<'idle' | 'success' | 'error'>('idle');
+  const [submitMessage, setSubmitMessage] = useState('');
 
   useEffect(() => {
     fetchUsers();
@@ -47,6 +50,9 @@ const Users: React.FC = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setIsSubmitting(true);
+    setSubmitStatus('idle');
+    setSubmitMessage('');
     
     try {
       if (editingUser) {
@@ -61,6 +67,8 @@ const Users: React.FC = () => {
           await fetchUsers();
           setShowCreateModal(false);
           setEditingUser(null);
+          setSubmitStatus('success');
+          setSubmitMessage('User updated successfully');
         }
       } else {
         // Create new user
@@ -78,6 +86,10 @@ const Users: React.FC = () => {
         if (data.success) {
           await fetchUsers();
           setShowCreateModal(false);
+          setSubmitStatus('success');
+          setSubmitMessage('Admin user created successfully');
+        } else {
+          throw new Error(data.message || 'Failed to create user');
         }
       }
 
@@ -89,6 +101,10 @@ const Users: React.FC = () => {
       });
     } catch (error) {
       console.error('Error saving user:', error);
+      setSubmitStatus('error');
+      setSubmitMessage(error instanceof Error ? error.message : 'Failed to save user');
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -149,14 +165,14 @@ const Users: React.FC = () => {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Admin User Management</h1>
-          <p className="text-gray-600">Manage admin users and their permissions</p>
+          <p className="text-gray-600">Create and manage admin users with full portal access</p>
         </div>
         <button
           onClick={() => setShowCreateModal(true)}
           className="flex items-center space-x-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
         >
           <Plus size={20} />
-          <span>Add Admin User</span>
+          <span>Create New Admin</span>
         </button>
       </div>
 
@@ -165,9 +181,9 @@ const Users: React.FC = () => {
         <div className="flex items-start space-x-3">
           <AlertTriangle className="w-5 h-5 text-yellow-600 mt-0.5" />
           <div>
-            <h3 className="font-medium text-yellow-800">Security Notice</h3>
+            <h3 className="font-medium text-yellow-800">Admin Creation Notice</h3>
             <p className="text-sm text-yellow-700 mt-1">
-              Only existing admin users can create new admin accounts. This ensures secure access control to your admin portal.
+              Only existing admin users can create new admin accounts. New admins will have full access to the admin portal including the ability to create other admins.
             </p>
           </div>
         </div>
@@ -280,7 +296,7 @@ const Users: React.FC = () => {
               <div className="p-6 border-b border-gray-200">
                 <div className="flex items-center justify-between">
                   <h2 className="text-2xl font-bold text-gray-900">
-                    {editingUser ? 'Edit Admin User' : 'Create New Admin User'}
+                    {editingUser ? 'Edit Admin User' : 'Create New Admin'}
                   </h2>
                   <button
                     onClick={() => {
@@ -301,9 +317,9 @@ const Users: React.FC = () => {
                       <Shield className="w-5 h-5 text-red-600 mt-0.5" />
                       <div>
                         <h3 className="font-medium text-red-800">Admin Access Only</h3>
-                        <p className="text-sm text-red-700 mt-1">
+                      <h3 className="font-medium text-red-800">Creating New Admin User</h3>
                           Only existing admin users can create new admin accounts. This user will have full access to the admin portal.
-                        </p>
+                        This will create a new admin user with full access to the admin portal, including the ability to create other admins, manage all content, and access sensitive data.
                       </div>
                     </div>
                   </div>
@@ -360,19 +376,40 @@ const Users: React.FC = () => {
                     value={formData.role}
                     onChange={(e) => setFormData({ ...formData, role: e.target.value })}
                     className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    disabled={!editingUser} // Only allow role change when editing
                   >
                     <option value="admin">Admin (Full Access)</option>
-                    <option value="client">Client (Limited Access)</option>
-                    <option value="guest">Guest (View Only)</option>
                   </select>
+                  {!editingUser && (
+                    <p className="text-xs text-gray-500 mt-1">
+                      New users are created as admins by default. Role can be changed after creation.
+                    </p>
+                  )}
                 </div>
 
                 <div className="flex justify-end space-x-4 pt-6 border-t border-gray-200">
+                  {/* Status Messages */}
+                  {submitStatus === 'success' && (
+                    <div className="flex items-center text-green-600 text-sm mr-4">
+                      <CheckCircle size={16} className="mr-2" />
+                      {submitMessage}
+                    </div>
+                  )}
+                  
+                  {submitStatus === 'error' && (
+                    <div className="flex items-center text-red-600 text-sm mr-4">
+                      <AlertTriangle size={16} className="mr-2" />
+                      {submitMessage}
+                    </div>
+                  )}
+                  
                   <button
                     type="button"
                     onClick={() => {
                       setShowCreateModal(false);
                       setEditingUser(null);
+                      setSubmitStatus('idle');
+                      setSubmitMessage('');
                     }}
                     className="px-6 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
                   >
@@ -380,9 +417,19 @@ const Users: React.FC = () => {
                   </button>
                   <button
                     type="submit"
-                    className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                    disabled={isSubmitting}
+                    className={`px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center ${
+                      isSubmitting ? 'opacity-75 cursor-not-allowed' : ''
+                    }`}
                   >
-                    {editingUser ? 'Update User' : 'Create Admin User'}
+                    {isSubmitting ? (
+                      <>
+                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                        {editingUser ? 'Updating...' : 'Creating...'}
+                      </>
+                    ) : (
+                      editingUser ? 'Update User' : 'Create New Admin'
+                    )}
                   </button>
                 </div>
               </form>

@@ -338,7 +338,7 @@ export const deleteUser = async (req, res, next) => {
 
 export const getNewsletterSubscribers = async (req, res, next) => {
   try {
-    const subscribers = await NewsletterSubscriber.find().sort({ subscription_date: -1 });
+    const subscribers = await NewsletterSubscriber.find({ status: 'active' }).sort({ subscription_date: -1 });
 
     res.json({
       success: true,
@@ -364,7 +364,7 @@ export const sendNewsletter = async (req, res, next) => {
     }
 
     // Get all subscribers
-    const subscribers = await NewsletterSubscriber.find();
+    const subscribers = await NewsletterSubscriber.find({ status: 'active' });
 
     // Send email to all subscribers
     const emailPromises = subscribers.map(subscriber => 
@@ -398,7 +398,12 @@ export const deleteNewsletterSubscriber = async (req, res, next) => {
   try {
     const { id } = req.params;
 
-    const subscriber = await NewsletterSubscriber.findByIdAndDelete(id);
+    // Instead of deleting, mark as unsubscribed
+    const subscriber = await NewsletterSubscriber.findByIdAndUpdate(
+      id, 
+      { status: 'unsubscribed' }, 
+      { new: true }
+    );
 
     if (!subscriber) {
       return res.status(404).json({
@@ -409,7 +414,7 @@ export const deleteNewsletterSubscriber = async (req, res, next) => {
 
     res.json({
       success: true,
-      message: 'Subscriber removed successfully',
+      message: 'Subscriber unsubscribed successfully',
     });
   } catch (error) {
     next(error);

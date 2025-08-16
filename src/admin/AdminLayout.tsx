@@ -80,7 +80,7 @@ const AdminLayout: React.FC = () => {
       label: 'Admin Users', 
       icon: Users, 
       path: '/admin/dashboard/users',
-      description: 'User management'
+      description: 'Manage admin users'
     },
   ];
 

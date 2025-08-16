@@ -184,18 +184,43 @@ router.post('/newsletter', async (req, res, next) => {
       });
     }
 
+    // Validate email format
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Please enter a valid email address',
+      });
+    }
+
     // Check if email already exists
     const existingSubscriber = await NewsletterSubscriber.findOne({ email });
 
     if (existingSubscriber) {
-      return res.status(400).json({
+      // If user was previously unsubscribed, reactivate them
+      if (existingSubscriber.status === 'unsubscribed') {
+        existingSubscriber.status = 'active';
+        existingSubscriber.subscription_date = new Date();
+        await existingSubscriber.save();
+        
+        return res.json({
+          success: true,
+          message: 'Welcome back! Your newsletter subscription has been reactivated.',
+        });
+      }
+      
+      return res.status(409).json({
         success: false,
         message: 'Email already subscribed to newsletter',
       });
     }
 
     // Add to newsletter
-    const subscriber = new NewsletterSubscriber({ email });
+    const subscriber = new NewsletterSubscriber({ 
+      email,
+      status: 'active',
+      subscription_date: new Date()
+    });
     await subscriber.save();
 
     // Send welcome email

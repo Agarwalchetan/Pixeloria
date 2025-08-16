@@ -8,6 +8,11 @@ const newsletterSubscriberSchema = new mongoose.Schema({
     lowercase: true,
     trim: true
   },
+  status: {
+    type: String,
+    enum: ['active', 'unsubscribed'],
+    default: 'active'
+  },
   subscription_date: {
     type: Date,
     default: Date.now

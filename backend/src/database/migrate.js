@@ -237,9 +237,21 @@ const createSampleData = async () => {
     const newsletterCount = await NewsletterSubscriber.countDocuments();
     if (newsletterCount === 0) {
       const sampleSubscribers = [
-        { email: 'subscriber1@example.com' },
-        { email: 'subscriber2@example.com' },
-        { email: 'subscriber3@example.com' }
+        { 
+          email: 'subscriber1@example.com',
+          status: 'active',
+          subscription_date: new Date()
+        },
+        { 
+          email: 'subscriber2@example.com',
+          status: 'active',
+          subscription_date: new Date()
+        },
+        { 
+          email: 'subscriber3@example.com',
+          status: 'active',
+          subscription_date: new Date()
+        }
       ];
       
       await NewsletterSubscriber.insertMany(sampleSubscribers);
