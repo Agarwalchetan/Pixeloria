@@ -1,5 +1,6 @@
 import express from 'express';
 import { authenticateToken, requireAdmin } from '../middleware/auth.js';
+import { requireFullAdmin, requireEditor } from '../middleware/auth.js';
 import { uploadMiddleware } from '../utils/fileUpload.js';
 import { validate, schemas } from '../middleware/validation.js';
 
@@ -90,47 +91,47 @@ router.get('/dashboard/overview', getDashboardOverview);
 router.get('/dashboard/analytics', getAnalytics);
 
 // Portfolio routes
-router.get('/dashboard/portfolio', getAllPortfolio);
+router.get('/dashboard/portfolio', getAllPortfolio); // All roles can view
 router.get('/dashboard/portfolio/:id', getPortfolioById);
-router.post('/dashboard/portfolio', uploadMiddleware.multiple('images', 5), createPortfolio);
-router.put('/dashboard/portfolio/:id', uploadMiddleware.multiple('images', 5), updatePortfolio);
-router.delete('/dashboard/portfolio/:id', deletePortfolio);
+router.post('/dashboard/portfolio', requireEditor, uploadMiddleware.multiple('images', 5), createPortfolio);
+router.put('/dashboard/portfolio/:id', requireEditor, uploadMiddleware.multiple('images', 5), updatePortfolio);
+router.delete('/dashboard/portfolio/:id', requireEditor, deletePortfolio);
 
 // Blog routes
-router.get('/dashboard/blog', getAllBlogs);
+router.get('/dashboard/blog', getAllBlogs); // All roles can view
 router.get('/dashboard/blog/:id', getBlogById);
-router.post('/dashboard/blog', uploadMiddleware.single('image'), createBlog);
-router.put('/dashboard/blog/:id', uploadMiddleware.single('image'), updateBlog);
-router.delete('/dashboard/blog/:id', deleteBlog);
+router.post('/dashboard/blog', requireEditor, uploadMiddleware.single('image'), createBlog);
+router.put('/dashboard/blog/:id', requireEditor, uploadMiddleware.single('image'), updateBlog);
+router.delete('/dashboard/blog/:id', requireEditor, deleteBlog);
 
 // Services routes
-router.get('/dashboard/services', getAllServices);
+router.get('/dashboard/services', getAllServices); // All roles can view
 router.get('/dashboard/services/:id', getServiceById);
-router.post('/dashboard/services', validate(schemas.service), createService);
-router.put('/dashboard/services/:id', updateService);
-router.delete('/dashboard/services/:id', deleteService);
+router.post('/dashboard/services', requireEditor, validate(schemas.service), createService);
+router.put('/dashboard/services/:id', requireEditor, updateService);
+router.delete('/dashboard/services/:id', requireEditor, deleteService);
 
 // Labs routes
-router.get('/dashboard/labs', getAllLabs);
+router.get('/dashboard/labs', getAllLabs); // All roles can view
 router.get('/dashboard/labs/:id', getLabById);
-router.post('/dashboard/labs', uploadMiddleware.single('image'), createLab);
-router.put('/dashboard/labs/:id', uploadMiddleware.single('image'), updateLab);
-router.delete('/dashboard/labs/:id', deleteLab);
+router.post('/dashboard/labs', requireEditor, uploadMiddleware.single('image'), createLab);
+router.put('/dashboard/labs/:id', requireEditor, uploadMiddleware.single('image'), updateLab);
+router.delete('/dashboard/labs/:id', requireEditor, deleteLab);
 
 // Contact routes
-router.get('/dashboard/contact-inquiries', getContacts);
-router.patch('/dashboard/contact-inquiries/:id/status', updateContactStatus);
+router.get('/dashboard/contact-inquiries', getContacts); // All roles can view
+router.patch('/dashboard/contact-inquiries/:id/status', requireEditor, updateContactStatus);
 
 // Testimonials routes
-router.get('/dashboard/testimonials', getTestimonials);
-router.post('/dashboard/testimonials', validate(schemas.testimonial), createTestimonial);
-router.put('/dashboard/testimonials/:id', updateTestimonial);
-router.delete('/dashboard/testimonials/:id', deleteTestimonial);
+router.get('/dashboard/testimonials', getTestimonials); // All roles can view
+router.post('/dashboard/testimonials', requireEditor, validate(schemas.testimonial), createTestimonial);
+router.put('/dashboard/testimonials/:id', requireEditor, updateTestimonial);
+router.delete('/dashboard/testimonials/:id', requireEditor, deleteTestimonial);
 
 // Newsletter routes
-router.get('/dashboard/newsletter', getNewsletterSubscribers);
-router.post('/dashboard/newsletter/send', sendNewsletter);
-router.delete('/dashboard/newsletter/:id', deleteNewsletterSubscriber);
+router.get('/dashboard/newsletter', getNewsletterSubscribers); // All roles can view
+router.post('/dashboard/newsletter/send', requireEditor, sendNewsletter);
+router.delete('/dashboard/newsletter/:id', requireEditor, deleteNewsletterSubscriber);
 
 // Settings routes
 router.get('/dashboard/settings', (req, res) => {
@@ -147,14 +148,14 @@ router.get('/dashboard/settings', (req, res) => {
     }
   });
 });
-router.put('/dashboard/settings', updateSettings);
+router.put('/dashboard/settings', requireFullAdmin, updateSettings);
 
 // Users routes
-router.get('/dashboard/users', getUsers);
-router.put('/dashboard/users/:id', updateUser);
-router.delete('/dashboard/users/:id', deleteUser);
+router.get('/dashboard/users', requireEditor, getUsers); // Editors and admins can view users
+router.put('/dashboard/users/:id', requireEditor, updateUser);
+router.delete('/dashboard/users/:id', requireEditor, deleteUser);
 
 // Bulk operations
-router.post('/dashboard/bulk-delete', bulkDelete);
+router.post('/dashboard/bulk-delete', requireEditor, bulkDelete);
 
 export default router;

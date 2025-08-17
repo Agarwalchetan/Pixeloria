@@ -38,10 +38,30 @@ export const authenticateToken = async (req, res, next) => {
 };
 
 export const requireAdmin = (req, res, next) => {
+  if (!['admin', 'editor', 'viewer'].includes(req.user.role)) {
+    return res.status(403).json({
+      success: false,
+      message: 'Admin portal access required',
+    });
+  }
+  next();
+};
+
+export const requireFullAdmin = (req, res, next) => {
   if (req.user.role !== 'admin') {
     return res.status(403).json({
       success: false,
-      message: 'Admin access required',
+      message: 'Full admin access required',
+    });
+  }
+  next();
+};
+
+export const requireEditor = (req, res, next) => {
+  if (!['admin', 'editor'].includes(req.user.role)) {
+    return res.status(403).json({
+      success: false,
+      message: 'Editor or admin access required',
     });
   }
   next();

@@ -4,10 +4,22 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { LayoutDashboard, FolderOpen, FileText, FlaskRound as Flask, Settings as SettingsIcon, Star, Mail, Users, BarChart3, MessageSquare, LogOut, Menu, X, Code, Shield, Bell, Search, User, ChevronDown, Home } from 'lucide-react';
 import { authUtils } from '../utils/auth';
 
+// Role-based access control for sidebar items
+const getRoleAccess = (userRole: string) => {
+  const access = {
+    admin: ['overview', 'portfolio', 'blog', 'labs', 'services', 'testimonials', 'contact-inquiries', 'newsletter', 'analytics', 'users', 'settings'],
+    editor: ['overview', 'portfolio', 'blog', 'labs', 'services', 'testimonials', 'contact-inquiries', 'newsletter', 'analytics'],
+    viewer: ['overview', 'portfolio', 'blog', 'labs', 'services', 'testimonials', 'contact-inquiries', 'newsletter', 'analytics']
+  };
+  
+  return access[userRole as keyof typeof access] || [];
+};
+
 const AdminLayout: React.FC = () => {
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
   const [adminUser, setAdminUser] = useState<any>(null);
+  const [userRole, setUserRole] = useState<string>('');
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -87,6 +99,7 @@ const AdminLayout: React.FC = () => {
   useEffect(() => {
     // Check authentication
     const user = authUtils.getUser();
+    const role = authUtils.getUserRole();
     
     if (!authUtils.isAuthenticated() || !authUtils.isAdmin()) {
       navigate('/admin');
@@ -94,6 +107,7 @@ const AdminLayout: React.FC = () => {
     }
 
     setAdminUser(user);
+    setUserRole(role || '');
   }, [navigate]);
 
   const handleLogout = () => {
@@ -152,7 +166,7 @@ const AdminLayout: React.FC = () => {
 
         {/* Navigation */}
         <nav className="p-4 space-y-2 overflow-y-auto h-full pb-20">
-          {sidebarItems.map((item) => (
+          {sidebarItems.filter(item => getRoleAccess(userRole).includes(item.id)).map((item) => (
             <Link
               key={item.id}
               to={item.path}
@@ -186,7 +200,7 @@ const AdminLayout: React.FC = () => {
                 </div>
                 <div className="flex-1 text-left">
                   <div className="font-medium text-gray-900">{adminUser.name}</div>
-                  <div className="text-xs text-gray-500">{adminUser.role}</div>
+                  <div className="text-xs text-gray-500 capitalize">{adminUser.role}</div>
                 </div>
                 <ChevronDown size={16} className="text-gray-400" />
               </button>

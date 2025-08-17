@@ -6,6 +6,8 @@ import {
 } from 'lucide-react';
 import { blogApi } from '../../utils/api';
 
+import { authUtils } from '../../utils/auth';
+
 interface BlogPost {
   _id: string;
   title: string;
@@ -28,6 +30,8 @@ const Blog: React.FC = () => {
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [editingPost, setEditingPost] = useState<BlogPost | null>(null);
 
+  const [userRole, setUserRole] = useState<string>('');
+
   const [formData, setFormData] = useState({
     title: '',
     excerpt: '',
@@ -41,6 +45,7 @@ const Blog: React.FC = () => {
 
   useEffect(() => {
     fetchPosts();
+    setUserRole(authUtils.getUserRole() || '');
   }, []);
 
   const fetchPosts = async () => {
@@ -130,6 +135,9 @@ const Blog: React.FC = () => {
 
   const categories = ['All', ...new Set(posts.map(p => p.category))];
 
+  const canEdit = authUtils.hasEditorAccess();
+  const canDelete = authUtils.hasEditorAccess();
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -137,14 +145,21 @@ const Blog: React.FC = () => {
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Blog Management</h1>
           <p className="text-gray-600">Create and manage blog posts</p>
+          {!canEdit && (
+            <p className="text-sm text-yellow-600 mt-1">
+              ⚠️ You have read-only access to this section
+            </p>
+          )}
         </div>
-        <button
-          onClick={() => setShowCreateModal(true)}
-          className="flex items-center space-x-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-        >
-          <Plus size={20} />
-          <span>New Post</span>
-        </button>
+        {canEdit && (
+          <button
+            onClick={() => setShowCreateModal(true)}
+            className="flex items-center space-x-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+          >
+            <Plus size={20} />
+            <span>New Post</span>
+          </button>
+        )}
       </div>
 
       {/* Filters */}
@@ -251,18 +266,25 @@ const Blog: React.FC = () => {
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="flex items-center space-x-2">
-                      <button
-                        onClick={() => handleEdit(post)}
-                        className="p-2 text-gray-400 hover:text-blue-600 transition-colors"
-                      >
-                        <Edit size={16} />
-                      </button>
-                      <button
-                        onClick={() => handleDelete(post._id)}
-                        className="p-2 text-gray-400 hover:text-red-600 transition-colors"
-                      >
-                        <Trash2 size={16} />
-                      </button>
+                      {canEdit && (
+                        <button
+                          onClick={() => handleEdit(post)}
+                          className="p-2 text-gray-400 hover:text-blue-600 transition-colors"
+                        >
+                          <Edit size={16} />
+                        </button>
+                      )}
+                      {canDelete && (
+                        <button
+                          onClick={() => handleDelete(post._id)}
+                          className="p-2 text-gray-400 hover:text-red-600 transition-colors"
+                        >
+                          <Trash2 size={16} />
+                        </button>
+                      )}
+                      {!canEdit && !canDelete && (
+                        <span className="text-xs text-gray-400 px-2 py-1">View Only</span>
+                      )}
                     </div>
                   </td>
                 </motion.tr>

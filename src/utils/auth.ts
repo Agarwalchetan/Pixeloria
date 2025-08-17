@@ -67,7 +67,31 @@ export const authUtils = {
   // Check if user is admin
   isAdmin(): boolean {
     const user = this.getUser();
+    return user?.role === "admin" || user?.role === "editor" || user?.role === "viewer";
+  },
+
+  // Check if user has admin privileges (full access)
+  hasAdminAccess(): boolean {
+    const user = this.getUser();
     return user?.role === "admin";
+  },
+
+  // Check if user has editor privileges (limited access)
+  hasEditorAccess(): boolean {
+    const user = this.getUser();
+    return user?.role === "admin" || user?.role === "editor";
+  },
+
+  // Check if user has viewer privileges (read-only)
+  hasViewerAccess(): boolean {
+    const user = this.getUser();
+    return user?.role === "admin" || user?.role === "editor" || user?.role === "viewer";
+  },
+
+  // Get user role
+  getUserRole(): string | null {
+    const user = this.getUser();
+    return user?.role || null;
   },
 
   // Verify token with backend

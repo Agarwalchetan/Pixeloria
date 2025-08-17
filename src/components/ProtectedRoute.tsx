@@ -6,9 +6,16 @@ import { authUtils } from '../utils/auth';
 interface ProtectedRouteProps {
   children: React.ReactNode;
   requireAdmin?: boolean;
+  requireEditor?: boolean;
+  requireViewer?: boolean;
 }
 
-const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children, requireAdmin = false }) => {
+const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ 
+  children, 
+  requireAdmin = false, 
+  requireEditor = false, 
+  requireViewer = false 
+}) => {
   const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
   const [userRole, setUserRole] = useState<string | null>(null);
   const location = useLocation();
@@ -58,7 +65,55 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children, requireAdmin 
   }
 
   // Authenticated but not admin (if admin required)
-  if (requireAdmin && userRole !== 'admin') {
+  if (requireAdmin && !authUtils.hasAdminAccess()) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
+            <Shield className="w-8 h-8 text-red-600" />
+          </div>
+          <h1 className="text-2xl font-bold text-gray-900 mb-2">Access Denied</h1>
+          <p className="text-gray-600 mb-4">You need admin privileges to access this area.</p>
+          <button
+            onClick={() => {
+              authUtils.clearAuth();
+              window.location.href = '/admin';
+            }}
+            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+          >
+            Login as Admin
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  // Authenticated but not editor (if editor required)
+  if (requireEditor && !authUtils.hasEditorAccess()) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="w-16 h-16 bg-yellow-100 rounded-full flex items-center justify-center mx-auto mb-4">
+            <Shield className="w-8 h-8 text-yellow-600" />
+          </div>
+          <h1 className="text-2xl font-bold text-gray-900 mb-2">Access Denied</h1>
+          <p className="text-gray-600 mb-4">You need editor or admin privileges to access this area.</p>
+          <button
+            onClick={() => {
+              authUtils.clearAuth();
+              window.location.href = '/admin';
+            }}
+            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+          >
+            Login with Proper Access
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  // Authenticated but not viewer (if viewer required)
+  if (requireViewer && !authUtils.hasViewerAccess()) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">

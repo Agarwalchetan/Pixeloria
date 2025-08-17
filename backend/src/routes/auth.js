@@ -66,10 +66,10 @@ router.post('/register', validate(schemas.register), async (req, res, next) => {
     const { name, email, password, role = 'client' } = req.body;
 
     // Only allow admin role creation by existing admins
-    if (role === 'admin' && !isAdminCreating) {
+    if (['admin', 'editor', 'viewer'].includes(role) && !isAdminCreating) {
       return res.status(403).json({
         success: false,
-        message: 'Only existing admin users can create new admin accounts',
+        message: 'Only existing admin portal users can create new admin portal accounts',
       });
     }
 

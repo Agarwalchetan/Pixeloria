@@ -6,6 +6,8 @@ import {
 } from 'lucide-react';
 import { portfolioApi } from '../../utils/api';
 
+import { authUtils } from '../../utils/auth';
+
 interface Project {
   _id: string;
   title: string;
@@ -28,6 +30,8 @@ const Portfolio: React.FC = () => {
   const [editingProject, setEditingProject] = useState<Project | null>(null);
   const [selectedProjects, setSelectedProjects] = useState<string[]>([]);
 
+  const [userRole, setUserRole] = useState<string>('');
+
   const [formData, setFormData] = useState({
     title: '',
     description: '',
@@ -40,6 +44,7 @@ const Portfolio: React.FC = () => {
 
   useEffect(() => {
     fetchProjects();
+    setUserRole(authUtils.getUserRole() || '');
   }, []);
 
   const fetchProjects = async () => {
@@ -127,6 +132,9 @@ const Portfolio: React.FC = () => {
 
   const categories = ['All', ...new Set(projects.map(p => p.category))];
 
+  const canEdit = authUtils.hasEditorAccess();
+  const canDelete = authUtils.hasEditorAccess();
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -134,14 +142,21 @@ const Portfolio: React.FC = () => {
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Portfolio Management</h1>
           <p className="text-gray-600">Manage your project portfolio</p>
+          {!canEdit && (
+            <p className="text-sm text-yellow-600 mt-1">
+              ⚠️ You have read-only access to this section
+            </p>
+          )}
         </div>
-        <button
-          onClick={() => setShowCreateModal(true)}
-          className="flex items-center space-x-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-        >
-          <Plus size={20} />
-          <span>Add Project</span>
-        </button>
+        {canEdit && (
+          <button
+            onClick={() => setShowCreateModal(true)}
+            className="flex items-center space-x-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+          >
+            <Plus size={20} />
+            <span>Add Project</span>
+          </button>
+        )}
       </div>
 
       {/* Filters */}
@@ -272,18 +287,25 @@ const Portfolio: React.FC = () => {
                           <ExternalLink size={16} />
                         </a>
                       )}
-                      <button
-                        onClick={() => handleEdit(project)}
-                        className="p-2 text-gray-400 hover:text-blue-600 transition-colors"
-                      >
-                        <Edit size={16} />
-                      </button>
-                      <button
-                        onClick={() => handleDelete(project._id)}
-                        className="p-2 text-gray-400 hover:text-red-600 transition-colors"
-                      >
-                        <Trash2 size={16} />
-                      </button>
+                      {canEdit && (
+                        <button
+                          onClick={() => handleEdit(project)}
+                          className="p-2 text-gray-400 hover:text-blue-600 transition-colors"
+                        >
+                          <Edit size={16} />
+                        </button>
+                      )}
+                      {canDelete && (
+                        <button
+                          onClick={() => handleDelete(project._id)}
+                          className="p-2 text-gray-400 hover:text-red-600 transition-colors"
+                        >
+                          <Trash2 size={16} />
+                        </button>
+                      )}
+                      {!canEdit && !canDelete && (
+                        <span className="text-xs text-gray-400 px-2 py-1">View Only</span>
+                      )}
                     </div>
                   </td>
                 </motion.tr>
