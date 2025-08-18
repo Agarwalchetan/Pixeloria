@@ -1,28 +1,86 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { useInView } from 'react-intersection-observer';
 import Hero from '../components/Hero';
 import SectionHeader from '../components/SectionHeader';
-import { Code, Coffee, Heart, Zap, Users, Star, Brain, Globe, Rocket, CheckCircle, ArrowRight } from 'lucide-react';
+import { 
+  Code, 
+  Coffee, 
+  Heart, 
+  Zap, 
+  Users, 
+  Star, 
+  Brain, 
+  Globe, 
+  Rocket, 
+  CheckCircle, 
+  ArrowRight,
+  TrendingUp,
+  Award
+} from 'lucide-react';
 import { Link } from 'react-router-dom';
 
 // Add API import for about settings
 import { adminApi } from '../utils/api';
+
+// Type definitions
+interface TeamMember {
+  _id?: string;
+  name: string;
+  role: string;
+  image: string;
+  bio: string;
+  fun_fact?: string;
+  funFact?: string;
+  skills: string[];
+  status?: string;
+  social?: {
+    github?: string;
+    linkedin?: string;
+    twitter?: string;
+  };
+}
+
+interface Milestone {
+  _id?: string;
+  year: string;
+  title: string;
+  description: string;
+  icon: string | React.ComponentType<any>;
+  status?: string;
+}
+
+interface AboutNumbers {
+  projects_completed: string;
+  client_satisfaction: string;
+  support_availability: string;
+  team_members: string;
+}
+
+interface AboutSettings {
+  about_numbers?: AboutNumbers;
+  journey_milestones?: Milestone[];
+  team_members?: TeamMember[];
+}
+
 const About: React.FC = () => {
   // About Settings State
-  const [aboutSettings, setAboutSettings] = useState<any>(null);
+  const [aboutSettings, setAboutSettings] = useState<AboutSettings | null>(null);
   const [isLoadingSettings, setIsLoadingSettings] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   // Fetch about settings from admin
   useEffect(() => {
     const fetchAboutSettings = async () => {
       try {
+        setError(null);
         const response = await adminApi.getAboutSettings();
         if (response.success && response.data) {
           setAboutSettings(response.data.aboutSettings);
         }
       } catch (error) {
         console.error('Error fetching about settings:', error);
+        setError('Failed to load settings');
       } finally {
         setIsLoadingSettings(false);
       }
@@ -31,7 +89,8 @@ const About: React.FC = () => {
     fetchAboutSettings();
   }, []);
 
-  const teamMembers = [
+  // Default team members fallback
+  const defaultTeamMembers: TeamMember[] = [
     {
       name: "Sarah Johnson",
       role: "Founder & Lead Developer",
@@ -100,6 +159,30 @@ const About: React.FC = () => {
     }
   ];
 
+  // Helper function to get icon component
+  const getIconComponent = (iconName: string | React.ComponentType<any>) => {
+    // If it's already a component, return it
+    if (typeof iconName === 'function') {
+      return iconName;
+    }
+
+    // Icon mapping for string names
+    const iconMap: { [key: string]: React.ComponentType<any> } = {
+      'Rocket': Rocket,
+      'Users': Users,
+      'CheckCircle': CheckCircle,
+      'Star': Star,
+      'Award': Award,
+      'TrendingUp': TrendingUp,
+      'Heart': Heart,
+      'Zap': Zap,
+      'Brain': Brain,
+      'Globe': Globe
+    };
+    
+    return iconMap[iconName] || Rocket;
+  };
+
   // Use admin settings or fallback to default stats
   const stats = aboutSettings?.about_numbers ? [
     { number: aboutSettings.about_numbers.projects_completed, label: "Projects Completed" },
@@ -114,7 +197,7 @@ const About: React.FC = () => {
   ];
 
   // Use admin settings or fallback to default milestones
-  const milestones = aboutSettings?.journey_milestones?.filter((m: any) => m.status === 'active') || [
+  const milestones = (aboutSettings?.journey_milestones?.filter((m: Milestone) => m.status === 'active')) || [
     {
       year: "2020",
       title: "Founded Pixeloria",
@@ -142,20 +225,36 @@ const About: React.FC = () => {
   ];
 
   // Use admin team members or fallback to default
-  const displayTeamMembers = aboutSettings?.team_members?.filter((m: any) => m.status === 'active') || teamMembers;
+  const displayTeamMembers = (aboutSettings?.team_members?.filter((m: TeamMember) => m.status === 'active')) || defaultTeamMembers;
 
-  // Helper function to get icon component
-  const getIconComponent = (iconName: string) => {
-    const iconMap: { [key: string]: any } = {
-      'Rocket': Rocket,
-      'Users': Users,
-      'CheckCircle': CheckCircle,
-      'Star': Star,
-      'Award': Star,
-      'TrendingUp': TrendingUp
-    };
-    return iconMap[iconName] || Rocket;
-  };
+  // Loading state
+  if (isLoadingSettings) {
+    return (
+      <div className="bg-gray-900 min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-400 mx-auto mb-4"></div>
+          <p className="text-gray-400">Loading...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Error state
+  if (error) {
+    return (
+      <div className="bg-gray-900 min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <p className="text-red-400 mb-4">Error: {error}</p>
+          <button 
+            onClick={() => window.location.reload()} 
+            className="btn-primary"
+          >
+            Retry
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="bg-gray-900">
@@ -283,54 +382,65 @@ const About: React.FC = () => {
             title="Meet Our Team"
             subtitle="The talented people behind our success"
           />
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {displayTeamMembers.map((member, index) => (
-              <motion.div
-                key={index}
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.5, delay: index * 0.1 }}
-                viewport={{ once: true }}
-                className="card group overflow-hidden"
-              >
-                <div className="relative">
-                  <img
-                    src={member.image}
-                    alt={member.name}
-                    className="w-full h-64 object-cover transform group-hover:scale-110 transition-transform duration-700"
-                  />
-                  <div className="absolute inset-0 bg-gradient-to-t from-gray-900 via-gray-900/50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-                </div>
-                <div className="p-6 relative">
-                  <div className="absolute inset-0 bg-gradient-to-br from-blue-600/5 to-purple-600/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-                  <div className="relative z-10">
-                    <h3 className="text-xl font-semibold mb-1 text-white group-hover:text-blue-400 transition-colors">
-                      {member.name}
-                    </h3>
-                    <p className="text-blue-400 mb-3">{member.role}</p>
-                    <p className="text-gray-400 mb-4">{member.bio}</p>
-                    <div className="space-y-3">
-                      {member.fun_fact && (
-                        <p className="text-sm text-gray-500">
-                          <span className="font-medium text-gray-400">Fun fact:</span> {member.fun_fact || member.funFact}
-                        </p>
-                      )}
-                      <div className="flex flex-wrap gap-2">
-                        {member.skills.map((skill, skillIndex) => (
-                          <span
-                            key={skillIndex}
-                            className="text-xs px-2 py-1 rounded-full bg-gradient-to-r from-blue-500/10 to-purple-500/10 text-blue-400"
-                          >
-                            {skill}
-                          </span>
-                        ))}
+          {displayTeamMembers && displayTeamMembers.length > 0 ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+              {displayTeamMembers.map((member, index) => (
+                <motion.div
+                  key={member._id || index}
+                  initial={{ opacity: 0, y: 20 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.5, delay: index * 0.1 }}
+                  viewport={{ once: true }}
+                  className="card group overflow-hidden"
+                >
+                  <div className="relative">
+                    <img
+                      src={member.image}
+                      alt={`${member.name} - ${member.role}`}
+                      className="w-full h-64 object-cover transform group-hover:scale-110 transition-transform duration-700"
+                      onError={(e) => {
+                        e.currentTarget.src = 'https://images.pexels.com/photos/220453/pexels-photo-220453.jpeg?auto=compress&cs=tinysrgb&w=400&h=400&dpr=1';
+                      }}
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-gray-900 via-gray-900/50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                  </div>
+                  <div className="p-6 relative">
+                    <div className="absolute inset-0 bg-gradient-to-br from-blue-600/5 to-purple-600/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                    <div className="relative z-10">
+                      <h3 className="text-xl font-semibold mb-1 text-white group-hover:text-blue-400 transition-colors">
+                        {member.name}
+                      </h3>
+                      <p className="text-blue-400 mb-3">{member.role}</p>
+                      <p className="text-gray-400 mb-4">{member.bio}</p>
+                      <div className="space-y-3">
+                        {(member.fun_fact || member.funFact) && (
+                          <p className="text-sm text-gray-500">
+                            <span className="font-medium text-gray-400">Fun fact:</span> {member.fun_fact || member.funFact}
+                          </p>
+                        )}
+                        {member.skills && member.skills.length > 0 && (
+                          <div className="flex flex-wrap gap-2">
+                            {member.skills.map((skill, skillIndex) => (
+                              <span
+                                key={skillIndex}
+                                className="text-xs px-2 py-1 rounded-full bg-gradient-to-r from-blue-500/10 to-purple-500/10 text-blue-400"
+                              >
+                                {skill}
+                              </span>
+                            ))}
+                          </div>
+                        )}
                       </div>
                     </div>
                   </div>
-                </div>
-              </motion.div>
-            ))}
-          </div>
+                </motion.div>
+              ))}
+            </div>
+          ) : (
+            <div className="text-center py-12">
+              <p className="text-gray-400">No team members available at the moment.</p>
+            </div>
+          )}
         </div>
       </section>
 
@@ -342,56 +452,40 @@ const About: React.FC = () => {
             subtitle="Key milestones in our growth story"
           />
           <div className="max-w-4xl mx-auto">
-            {milestones.map((milestone, index) => (
-              <motion.div
-                key={milestone._id || index}
-                initial={{ opacity: 0, x: index % 2 === 0 ? -20 : 20 }}
-                whileInView={{ opacity: 1, x: 0 }}
-                transition={{ duration: 0.5, delay: index * 0.1 }}
-                viewport={{ once: true }}
-                className="relative pl-8 pb-12 last:pb-0"
-              >
-                <div className="absolute left-0 top-0 w-1 h-full bg-gradient-to-b from-blue-500 to-purple-500">
-                  <div className="absolute -left-3 top-0 w-7 h-7 rounded-full bg-gray-900 border-2 border-blue-400 flex items-center justify-center">
-                    {React.createElement(getIconComponent(milestone.icon), { className: "w-4 h-4 text-blue-400" })}
-                  </div>
-                </div>
-                <div className="card p-6 ml-8 group hover:bg-gray-800/50 transition-all duration-300">
-                  <span className="text-sm font-semibold text-blue-400">{milestone.year}</span>
-                  <h3 className="text-xl font-semibold mb-2 text-white group-hover:text-blue-400 transition-colors">
-                    {milestone.title}
-                  </h3>
-                  <p className="text-gray-400 group-hover:text-gray-300 transition-colors">
-                    {milestone.description}
-                  </p>
-                </div>
-              </motion.div>
-            ))}
-          </div>
-              <motion.div
-                key={index}
-                initial={{ opacity: 0, x: index % 2 === 0 ? -20 : 20 }}
-                whileInView={{ opacity: 1, x: 0 }}
-                transition={{ duration: 0.5, delay: index * 0.1 }}
-                viewport={{ once: true }}
-                className="relative pl-8 pb-12 last:pb-0"
-              >
-                <div className="absolute left-0 top-0 w-1 h-full bg-gradient-to-b from-blue-500 to-purple-500">
-                  <div className="absolute -left-3 top-0 w-7 h-7 rounded-full bg-gray-900 border-2 border-blue-400 flex items-center justify-center">
-                    <milestone.icon className="w-4 h-4 text-blue-400" />
-                  </div>
-                </div>
-                <div className="card p-6 ml-8 group hover:bg-gray-800/50 transition-all duration-300">
-                  <span className="text-sm font-semibold text-blue-400">{milestone.year}</span>
-                  <h3 className="text-xl font-semibold mb-2 text-white group-hover:text-blue-400 transition-colors">
-                    {milestone.title}
-                  </h3>
-                  <p className="text-gray-400 group-hover:text-gray-300 transition-colors">
-                    {milestone.description}
-                  </p>
-                </div>
-              </motion.div>
-            ))}
+            {milestones && milestones.length > 0 ? (
+              milestones.map((milestone, index) => {
+                const IconComponent = getIconComponent(milestone.icon);
+                return (
+                  <motion.div
+                    key={milestone._id || index}
+                    initial={{ opacity: 0, x: index % 2 === 0 ? -20 : 20 }}
+                    whileInView={{ opacity: 1, x: 0 }}
+                    transition={{ duration: 0.5, delay: index * 0.1 }}
+                    viewport={{ once: true }}
+                    className="relative pl-8 pb-12 last:pb-0"
+                  >
+                    <div className="absolute left-0 top-0 w-1 h-full bg-gradient-to-b from-blue-500 to-purple-500">
+                      <div className="absolute -left-3 top-0 w-7 h-7 rounded-full bg-gray-900 border-2 border-blue-400 flex items-center justify-center">
+                        <IconComponent className="w-4 h-4 text-blue-400" />
+                      </div>
+                    </div>
+                    <div className="card p-6 ml-8 group hover:bg-gray-800/50 transition-all duration-300">
+                      <span className="text-sm font-semibold text-blue-400">{milestone.year}</span>
+                      <h3 className="text-xl font-semibold mb-2 text-white group-hover:text-blue-400 transition-colors">
+                        {milestone.title}
+                      </h3>
+                      <p className="text-gray-400 group-hover:text-gray-300 transition-colors">
+                        {milestone.description}
+                      </p>
+                    </div>
+                  </motion.div>
+                );
+              })
+            ) : (
+              <div className="text-center py-12">
+                <p className="text-gray-400">No milestones available at the moment.</p>
+              </div>
+            )}
           </div>
         </div>
       </section>
