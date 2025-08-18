@@ -178,6 +178,96 @@ export const adminApi = {
       method: 'PUT',
       body: JSON.stringify({ type, settings }),
     }),
+
+  // Home Page Content Management
+  getHomeSettings: () => fetchApi<{
+    homeSettings: any;
+    availableProjects: any[];
+    featuredTestimonials: any[];
+  }>('/admin/dashboard/home-settings'),
+  
+  updateHomeSettings: (settings: any) => 
+    fetchApi<{ homeSettings: any }>('/admin/dashboard/home-settings', {
+      method: 'PUT',
+      body: JSON.stringify(settings),
+    }),
+
+  // About Page Content Management
+  getAboutSettings: () => fetchApi<{ aboutSettings: any }>('/admin/dashboard/about-settings'),
+  
+  updateAboutSettings: (settings: any) => 
+    fetchApi<{ aboutSettings: any }>('/admin/dashboard/about-settings', {
+      method: 'PUT',
+      body: JSON.stringify(settings),
+    }),
+
+  createTeamMember: (memberData: any, image?: File) => {
+    if (image) {
+      const formData = new FormData();
+      Object.keys(memberData).forEach(key => {
+        if (key === 'skills' && Array.isArray(memberData[key])) {
+          formData.append(key, memberData[key].join(','));
+        } else if (key === 'social' && typeof memberData[key] === 'object') {
+          formData.append(key, JSON.stringify(memberData[key]));
+        } else {
+          formData.append(key, memberData[key]);
+        }
+      });
+      formData.append('image', image);
+      return fetchApiWithFormData<{ aboutSettings: any }>('/admin/dashboard/about-settings/team', formData);
+    } else {
+      return fetchApi<{ aboutSettings: any }>('/admin/dashboard/about-settings/team', {
+        method: 'POST',
+        body: JSON.stringify(memberData),
+      });
+    }
+  },
+
+  updateTeamMember: (id: string, memberData: any, image?: File) => {
+    if (image) {
+      const formData = new FormData();
+      Object.keys(memberData).forEach(key => {
+        if (key === 'skills' && Array.isArray(memberData[key])) {
+          formData.append(key, memberData[key].join(','));
+        } else if (key === 'social' && typeof memberData[key] === 'object') {
+          formData.append(key, JSON.stringify(memberData[key]));
+        } else {
+          formData.append(key, memberData[key]);
+        }
+      });
+      formData.append('image', image);
+      return fetchApiWithFormData<{ aboutSettings: any }>(`/admin/dashboard/about-settings/team/${id}`, formData, {
+        method: 'PUT',
+      });
+    } else {
+      return fetchApi<{ aboutSettings: any }>(`/admin/dashboard/about-settings/team/${id}`, {
+        method: 'PUT',
+        body: JSON.stringify(memberData),
+      });
+    }
+  },
+
+  deleteTeamMember: (id: string) => 
+    fetchApi<{ aboutSettings: any }>(`/admin/dashboard/about-settings/team/${id}`, {
+      method: 'DELETE',
+    }),
+
+  createJourneyMilestone: (milestoneData: any) => 
+    fetchApi<{ aboutSettings: any }>('/admin/dashboard/about-settings/journey', {
+      method: 'POST',
+      body: JSON.stringify(milestoneData),
+    }),
+
+  updateJourneyMilestone: (id: string, milestoneData: any) => 
+    fetchApi<{ aboutSettings: any }>(`/admin/dashboard/about-settings/journey/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(milestoneData),
+    }),
+
+  deleteJourneyMilestone: (id: string) => 
+    fetchApi<{ aboutSettings: any }>(`/admin/dashboard/about-settings/journey/${id}`, {
+      method: 'DELETE',
+    }),
 };
 // API endpoint functions
 export const blogApi = {

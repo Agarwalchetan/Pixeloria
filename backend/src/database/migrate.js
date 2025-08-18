@@ -49,6 +49,8 @@ const createSampleData = async () => {
     const Testimonial = (await import('./models/Testimonial.js')).default;
     const Contact = (await import('./models/Contact.js')).default;
     const NewsletterSubscriber = (await import('./models/NewsletterSubscriber.js')).default;
+    const HomeSettings = (await import('./models/HomeSettings.js')).default;
+    const AboutSettings = (await import('./models/AboutSettings.js')).default;
 
     // Create sample portfolio projects if none exist
     const portfolioCount = await Portfolio.countDocuments();
@@ -258,6 +260,119 @@ const createSampleData = async () => {
       logger.info('Sample newsletter subscribers created');
     }
 
+    // Create default home settings if none exist
+    const homeSettingsCount = await HomeSettings.countDocuments();
+    if (homeSettingsCount === 0) {
+      const defaultHomeSettings = new HomeSettings({
+        edge_numbers: {
+          projects_delivered: 50,
+          client_satisfaction: 100,
+          users_reached: "1M+",
+          support_hours: "24/7"
+        },
+        featured_case_studies: []
+      });
+      
+      await defaultHomeSettings.save();
+      logger.info('Default home settings created');
+    }
+
+    // Create default about settings if none exist
+    const aboutSettingsCount = await AboutSettings.countDocuments();
+    if (aboutSettingsCount === 0) {
+      const defaultAboutSettings = new AboutSettings({
+        about_numbers: {
+          projects_completed: "50+",
+          client_satisfaction: "100%",
+          support_availability: "24/7",
+          team_members: "10+"
+        },
+        team_members: [
+          {
+            name: "Sarah Johnson",
+            role: "Founder & Lead Developer",
+            image: "https://images.pexels.com/photos/774909/pexels-photo-774909.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=2",
+            bio: "Full-stack developer with 10+ years of experience in building scalable web applications.",
+            fun_fact: "Can code faster with coffee than without ☕",
+            skills: ["React", "Node.js", "AWS"],
+            social: {
+              github: "#",
+              linkedin: "#",
+              twitter: "#"
+            },
+            order: 1,
+            status: 'active'
+          },
+          {
+            name: "Michael Chen",
+            role: "UI/UX Designer",
+            image: "https://images.pexels.com/photos/220453/pexels-photo-220453.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=2",
+            bio: "Passionate about creating beautiful and intuitive user experiences.",
+            fun_fact: "Draws inspiration from nature walks 🌿",
+            skills: ["Figma", "Adobe XD", "Prototyping"],
+            social: {
+              github: "#",
+              linkedin: "#",
+              twitter: "#"
+            },
+            order: 2,
+            status: 'active'
+          },
+          {
+            name: "Emily Rodriguez",
+            role: "Technical Lead",
+            image: "https://images.pexels.com/photos/415829/pexels-photo-415829.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=2",
+            bio: "Architecture expert specializing in scalable solutions.",
+            fun_fact: "Builds mechanical keyboards for fun ⌨️",
+            skills: ["System Design", "Cloud Architecture", "DevOps"],
+            social: {
+              github: "#",
+              linkedin: "#",
+              twitter: "#"
+            },
+            order: 3,
+            status: 'active'
+          }
+        ],
+        journey_milestones: [
+          {
+            year: "2020",
+            title: "Founded Pixeloria",
+            description: "Started with a vision to create exceptional digital experiences.",
+            icon: "Rocket",
+            order: 1,
+            status: 'active'
+          },
+          {
+            year: "2021",
+            title: "Team Growth",
+            description: "Expanded to a team of 10 talented developers and designers.",
+            icon: "Users",
+            order: 2,
+            status: 'active'
+          },
+          {
+            year: "2022",
+            title: "50+ Projects",
+            description: "Successfully delivered over 50 projects for clients worldwide.",
+            icon: "CheckCircle",
+            order: 3,
+            status: 'active'
+          },
+          {
+            year: "2023",
+            title: "Innovation Award",
+            description: "Recognized for excellence in web development and design.",
+            icon: "Star",
+            order: 4,
+            status: 'active'
+          }
+        ]
+      });
+      
+      await defaultAboutSettings.save();
+      logger.info('Default about settings created');
+    }
   } catch (error) {
     logger.error('Error creating sample data:', error);
   }

@@ -11,6 +11,8 @@ import { motion, AnimatePresence, useInView, useMotionValue, useTransform } from
 import { Link } from 'react-router-dom';
 import { portfolioApi, servicesApi } from '../utils/api';
 
+// Add API import for home settings
+import { adminApi } from '../utils/api';
 const Home: React.FC = () => {
   // Interactive Services State
   const [selectedService, setSelectedService] = useState<string | null>(null);
@@ -35,6 +37,10 @@ const Home: React.FC = () => {
   const [isLoadingData, setIsLoadingData] = useState(true);
   const [dataError, setDataError] = useState<string | null>(null);
 
+  // Home Settings State
+  const [homeSettings, setHomeSettings] = useState<any>(null);
+  const [featuredCaseStudies, setFeaturedCaseStudies] = useState<any[]>([]);
+  const [featuredTestimonials, setFeaturedTestimonials] = useState<any[]>([]);
   const services = [
     {
       id: 'web-design',
@@ -341,9 +347,10 @@ const Home: React.FC = () => {
         setIsLoadingData(true);
         setDataError(null);
         
-        const [portfolioResponse, servicesResponse] = await Promise.all([
+        const [portfolioResponse, servicesResponse, homeSettingsResponse] = await Promise.all([
           portfolioApi.getAll({ limit: 4 }),
-          servicesApi.getAll()
+          servicesApi.getAll(),
+          adminApi.getHomeSettings().catch(() => ({ success: false }))
         ]);
         
         if (portfolioResponse.success && portfolioResponse.data) {
@@ -352,6 +359,23 @@ const Home: React.FC = () => {
         
         if (servicesResponse.success && servicesResponse.data) {
           setApiServices(servicesResponse.data.services || []);
+        }
+        
+        if (homeSettingsResponse.success && homeSettingsResponse.data) {
+          setHomeSettings(homeSettingsResponse.data.homeSettings);
+          
+          // Set featured case studies from admin selection
+          if (homeSettingsResponse.data.homeSettings?.featured_case_studies) {
+            const featuredProjects = homeSettingsResponse.data.homeSettings.featured_case_studies
+              .map((cs: any) => cs.portfolio_id)
+              .filter(Boolean);
+            setFeaturedCaseStudies(featuredProjects);
+          }
+          
+          // Set featured testimonials
+          if (homeSettingsResponse.data.featuredTestimonials) {
+            setFeaturedTestimonials(homeSettingsResponse.data.featuredTestimonials);
+          }
         }
       } catch (err) {
         console.error('Error fetching data:', err);
@@ -365,12 +389,12 @@ const Home: React.FC = () => {
   }, []);
 
   const filteredProjects = projectFilter === 'All' 
-    ? featuredProjects 
-    : featuredProjects.filter(project => project.category === projectFilter);
+    ? (featuredCaseStudies.length > 0 ? featuredCaseStudies : featuredProjects)
+    : (featuredCaseStudies.length > 0 ? featuredCaseStudies : featuredProjects).filter(project => project.category === projectFilter);
 
   const filteredTestimonials = testimonialFilter === 'All'
-    ? testimonials
-    : testimonials.filter(testimonial => testimonial.industry === testimonialFilter);
+    ? (featuredTestimonials.length > 0 ? featuredTestimonials : testimonials)
+    : (featuredTestimonials.length > 0 ? featuredTestimonials : testimonials).filter(testimonial => testimonial.industry === testimonialFilter);
 
   return (
     <>
@@ -739,7 +763,12 @@ const Home: React.FC = () => {
             ref={statsRef}
             className="grid grid-cols-2 md:grid-cols-4 gap-8 mb-16"
           >
-            {trustMetrics.map((metric, index) => (
+            {(homeSettings?.edge_numbers ? [
+              { number: homeSettings.edge_numbers.projects_delivered, label: "Projects Delivered", suffix: "+" },
+              { number: homeSettings.edge_numbers.client_satisfaction, label: "Client Satisfaction", suffix: "%" },
+              { number: homeSettings.edge_numbers.users_reached, label: "Users Reached", suffix: "" },
+              { number: homeSettings.edge_numbers.support_hours, label: "Support", suffix: "" }
+            ] : trustMetrics).map((metric, index) => (
               <motion.div
                 key={index}
                 initial={{ opacity: 0, scale: 0.5 }}
@@ -753,7 +782,7 @@ const Home: React.FC = () => {
                   animate={{ scale: statsInView ? [1, 1.1, 1] : 1 }}
                   transition={{ duration: 0.5, delay: index * 0.2 }}
                 >
-                  {metric.suffix === "/5" ? counts[index].toFixed(1) : Math.round(counts[index])}{metric.suffix}
+                  {typeof metric.number === 'string' ? metric.number : (metric.suffix === "/5" ? counts[index]?.toFixed(1) : Math.round(counts[index] || 0))}{metric.suffix}
                 </motion.div>
                 <div className="text-gray-600 font-medium">{metric.label}</div>
               </motion.div>

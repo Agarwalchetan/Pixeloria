@@ -56,6 +56,18 @@ import {
   deleteLab
 } from '../controllers/labsController.js';
 
+import {
+  getHomeSettings,
+  updateHomeSettings,
+  getAboutSettings,
+  updateAboutSettings,
+  createTeamMember,
+  updateTeamMember,
+  deleteTeamMember,
+  createJourneyMilestone,
+  updateJourneyMilestone,
+  deleteJourneyMilestone
+} from '../controllers/contentController.js';
 const router = express.Router();
 
 // Apply authentication middleware to all admin routes
@@ -150,6 +162,19 @@ router.get('/dashboard/settings', (req, res) => {
 });
 router.put('/dashboard/settings', requireFullAdmin, updateSettings);
 
+// Home Page Content Management
+router.get('/dashboard/home-settings', getHomeSettings);
+router.put('/dashboard/home-settings', requireEditor, updateHomeSettings);
+
+// About Page Content Management
+router.get('/dashboard/about-settings', getAboutSettings);
+router.put('/dashboard/about-settings', requireEditor, updateAboutSettings);
+router.post('/dashboard/about-settings/team', requireEditor, uploadMiddleware.single('image'), createTeamMember);
+router.put('/dashboard/about-settings/team/:id', requireEditor, uploadMiddleware.single('image'), updateTeamMember);
+router.delete('/dashboard/about-settings/team/:id', requireEditor, deleteTeamMember);
+router.post('/dashboard/about-settings/journey', requireEditor, createJourneyMilestone);
+router.put('/dashboard/about-settings/journey/:id', requireEditor, updateJourneyMilestone);
+router.delete('/dashboard/about-settings/journey/:id', requireEditor, deleteJourneyMilestone);
 // Users routes
 router.get('/dashboard/users', requireEditor, getUsers); // Editors and admins can view users
 router.put('/dashboard/users/:id', requireEditor, updateUser);

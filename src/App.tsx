@@ -29,6 +29,10 @@ import AdminSettings from './admin/Settings';
 import AdminAnalytics from './admin/Analytics';
 import AdminUsers from './admin/Users';
 
+// Content Management Components
+import AdminHomeContent from './admin/HomeContent';
+import AdminAboutContent from './admin/AboutContent';
+
 // Lab Tools
 import ColorGenerator from './pages/labs/ColorGenerator';
 import AnimationTester from './pages/labs/AnimationTester';
@@ -77,6 +81,8 @@ function App() {
         <Route path="settings" element={<AdminSettings />} />
         <Route path="analytics" element={<AdminAnalytics />} />
         <Route path="users" element={<AdminUsers />} />
+        <Route path="home-content" element={<AdminHomeContent />} />
+        <Route path="about-content" element={<AdminAboutContent />} />
       </Route>
       
       {/* Lab Tools Routes */}

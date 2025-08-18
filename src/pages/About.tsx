@@ -6,7 +6,31 @@ import SectionHeader from '../components/SectionHeader';
 import { Code, Coffee, Heart, Zap, Users, Star, Brain, Globe, Rocket, CheckCircle, ArrowRight } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
+// Add API import for about settings
+import { adminApi } from '../utils/api';
 const About: React.FC = () => {
+  // About Settings State
+  const [aboutSettings, setAboutSettings] = useState<any>(null);
+  const [isLoadingSettings, setIsLoadingSettings] = useState(true);
+
+  // Fetch about settings from admin
+  useEffect(() => {
+    const fetchAboutSettings = async () => {
+      try {
+        const response = await adminApi.getAboutSettings();
+        if (response.success && response.data) {
+          setAboutSettings(response.data.aboutSettings);
+        }
+      } catch (error) {
+        console.error('Error fetching about settings:', error);
+      } finally {
+        setIsLoadingSettings(false);
+      }
+    };
+
+    fetchAboutSettings();
+  }, []);
+
   const teamMembers = [
     {
       name: "Sarah Johnson",
@@ -76,14 +100,21 @@ const About: React.FC = () => {
     }
   ];
 
-  const stats = [
+  // Use admin settings or fallback to default stats
+  const stats = aboutSettings?.about_numbers ? [
+    { number: aboutSettings.about_numbers.projects_completed, label: "Projects Completed" },
+    { number: aboutSettings.about_numbers.client_satisfaction, label: "Client Satisfaction" },
+    { number: aboutSettings.about_numbers.support_availability, label: "Support" },
+    { number: aboutSettings.about_numbers.team_members, label: "Expert Team Members" }
+  ] : [
     { number: "50+", label: "Projects Completed" },
     { number: "100%", label: "Client Satisfaction" },
     { number: "24/7", label: "Support" },
     { number: "10+", label: "Expert Team Members" }
   ];
 
-  const milestones = [
+  // Use admin settings or fallback to default milestones
+  const milestones = aboutSettings?.journey_milestones?.filter((m: any) => m.status === 'active') || [
     {
       year: "2020",
       title: "Founded Pixeloria",
@@ -109,6 +140,22 @@ const About: React.FC = () => {
       icon: Star
     }
   ];
+
+  // Use admin team members or fallback to default
+  const displayTeamMembers = aboutSettings?.team_members?.filter((m: any) => m.status === 'active') || teamMembers;
+
+  // Helper function to get icon component
+  const getIconComponent = (iconName: string) => {
+    const iconMap: { [key: string]: any } = {
+      'Rocket': Rocket,
+      'Users': Users,
+      'CheckCircle': CheckCircle,
+      'Star': Star,
+      'Award': Star,
+      'TrendingUp': TrendingUp
+    };
+    return iconMap[iconName] || Rocket;
+  };
 
   return (
     <div className="bg-gray-900">
@@ -237,7 +284,7 @@ const About: React.FC = () => {
             subtitle="The talented people behind our success"
           />
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {teamMembers.map((member, index) => (
+            {displayTeamMembers.map((member, index) => (
               <motion.div
                 key={index}
                 initial={{ opacity: 0, y: 20 }}
@@ -263,9 +310,11 @@ const About: React.FC = () => {
                     <p className="text-blue-400 mb-3">{member.role}</p>
                     <p className="text-gray-400 mb-4">{member.bio}</p>
                     <div className="space-y-3">
-                      <p className="text-sm text-gray-500">
-                        <span className="font-medium text-gray-400">Fun fact:</span> {member.funFact}
-                      </p>
+                      {member.fun_fact && (
+                        <p className="text-sm text-gray-500">
+                          <span className="font-medium text-gray-400">Fun fact:</span> {member.fun_fact || member.funFact}
+                        </p>
+                      )}
                       <div className="flex flex-wrap gap-2">
                         {member.skills.map((skill, skillIndex) => (
                           <span
@@ -294,6 +343,31 @@ const About: React.FC = () => {
           />
           <div className="max-w-4xl mx-auto">
             {milestones.map((milestone, index) => (
+              <motion.div
+                key={milestone._id || index}
+                initial={{ opacity: 0, x: index % 2 === 0 ? -20 : 20 }}
+                whileInView={{ opacity: 1, x: 0 }}
+                transition={{ duration: 0.5, delay: index * 0.1 }}
+                viewport={{ once: true }}
+                className="relative pl-8 pb-12 last:pb-0"
+              >
+                <div className="absolute left-0 top-0 w-1 h-full bg-gradient-to-b from-blue-500 to-purple-500">
+                  <div className="absolute -left-3 top-0 w-7 h-7 rounded-full bg-gray-900 border-2 border-blue-400 flex items-center justify-center">
+                    {React.createElement(getIconComponent(milestone.icon), { className: "w-4 h-4 text-blue-400" })}
+                  </div>
+                </div>
+                <div className="card p-6 ml-8 group hover:bg-gray-800/50 transition-all duration-300">
+                  <span className="text-sm font-semibold text-blue-400">{milestone.year}</span>
+                  <h3 className="text-xl font-semibold mb-2 text-white group-hover:text-blue-400 transition-colors">
+                    {milestone.title}
+                  </h3>
+                  <p className="text-gray-400 group-hover:text-gray-300 transition-colors">
+                    {milestone.description}
+                  </p>
+                </div>
+              </motion.div>
+            ))}
+          </div>
               <motion.div
                 key={index}
                 initial={{ opacity: 0, x: index % 2 === 0 ? -20 : 20 }}

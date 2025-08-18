@@ -94,6 +94,20 @@ const AdminLayout: React.FC = () => {
       path: '/admin/dashboard/users',
       description: 'Manage admin users'
     },
+    { 
+      id: 'home-content', 
+      label: 'Home Content', 
+      icon: Home, 
+      path: '/admin/dashboard/home-content',
+      description: 'Manage home page content'
+    },
+    { 
+      id: 'about-content', 
+      label: 'About Content', 
+      icon: User, 
+      path: '/admin/dashboard/about-content',
+      description: 'Manage about page content'
+    },
   ];
 
   useEffect(() => {
