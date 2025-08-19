@@ -68,9 +68,6 @@ const About: React.FC = () => {
   const [aboutSettings, setAboutSettings] = useState<AboutSettings | null>(null);
   const [isLoadingSettings, setIsLoadingSettings] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [displayStats, setDisplayStats] = useState(defaultStats);
-  const [displayTeamMembers, setDisplayTeamMembers] = useState<TeamMember[]>(defaultTeamMembers);
-  const [displayMilestones, setDisplayMilestones] = useState<Milestone[]>([]);
 
   // Fetch about settings from admin
   useEffect(() => {
@@ -80,61 +77,6 @@ const About: React.FC = () => {
         const response = await adminApi.getAboutSettings();
         if (response.success && response.data) {
           setAboutSettings(response.data.aboutSettings);
-          
-          // Set stats from admin settings or use defaults
-          if (response.data.aboutSettings?.about_numbers) {
-            const adminNumbers = response.data.aboutSettings.about_numbers;
-            setDisplayStats([
-              { number: adminNumbers.projects_completed, label: "Projects Completed" },
-              { number: adminNumbers.client_satisfaction, label: "Client Satisfaction" },
-              { number: adminNumbers.support_availability, label: "Support" },
-              { number: adminNumbers.team_members, label: "Expert Team Members" }
-            ]);
-          }
-          
-          // Set team members from admin settings or use defaults
-          if (response.data.aboutSettings?.team_members?.length > 0) {
-            const activeTeamMembers = response.data.aboutSettings.team_members
-              .filter((member: TeamMember) => member.status === 'active')
-              .sort((a: any, b: any) => (a.order || 0) - (b.order || 0));
-            setDisplayTeamMembers(activeTeamMembers);
-          }
-          
-          // Set journey milestones from admin settings
-          if (response.data.aboutSettings?.journey_milestones?.length > 0) {
-            const activeMilestones = response.data.aboutSettings.journey_milestones
-              .filter((milestone: Milestone) => milestone.status === 'active')
-              .sort((a: any, b: any) => (a.order || 0) - (b.order || 0));
-            setDisplayMilestones(activeMilestones);
-          } else {
-            // Use default milestones if none from admin
-            setDisplayMilestones([
-              {
-                year: "2020",
-                title: "Founded Pixeloria",
-                description: "Started with a vision to create exceptional digital experiences.",
-                icon: Rocket
-              },
-              {
-                year: "2021", 
-                title: "Team Growth",
-                description: "Expanded to a team of 10 talented developers and designers.",
-                icon: Users
-              },
-              {
-                year: "2022",
-                title: "50+ Projects",
-                description: "Successfully delivered over 50 projects for clients worldwide.",
-                icon: CheckCircle
-              },
-              {
-                year: "2023",
-                title: "Innovation Award",
-                description: "Recognized for excellence in web development and design.",
-                icon: Star
-              }
-            ]);
-          }
         }
       } catch (error) {
         console.error('Error fetching about settings:', error);
@@ -147,8 +89,8 @@ const About: React.FC = () => {
     fetchAboutSettings();
   }, []);
 
-  // Default team members fallback (moved to state)
-  const defaultTeamMembers = [
+  // Default team members fallback
+  const defaultTeamMembers: TeamMember[] = [
     {
       name: "Sarah Johnson",
       role: "Founder & Lead Developer",
@@ -241,13 +183,49 @@ const About: React.FC = () => {
     return iconMap[iconName] || Rocket;
   };
 
-  // Default stats fallback
-  const defaultStats = [
+  // Use admin settings or fallback to default stats
+  const stats = aboutSettings?.about_numbers ? [
+    { number: aboutSettings.about_numbers.projects_completed, label: "Projects Completed" },
+    { number: aboutSettings.about_numbers.client_satisfaction, label: "Client Satisfaction" },
+    { number: aboutSettings.about_numbers.support_availability, label: "Support" },
+    { number: aboutSettings.about_numbers.team_members, label: "Expert Team Members" }
+  ] : [
     { number: "50+", label: "Projects Completed" },
     { number: "100%", label: "Client Satisfaction" },
     { number: "24/7", label: "Support" },
     { number: "10+", label: "Expert Team Members" }
   ];
+
+  // Use admin settings or fallback to default milestones
+  const milestones = (aboutSettings?.journey_milestones?.filter((m: Milestone) => m.status === 'active')) || [
+    {
+      year: "2020",
+      title: "Founded Pixeloria",
+      description: "Started with a vision to create exceptional digital experiences.",
+      icon: Rocket
+    },
+    {
+      year: "2021",
+      title: "Team Growth",
+      description: "Expanded to a team of 10 talented developers and designers.",
+      icon: Users
+    },
+    {
+      year: "2022",
+      title: "50+ Projects",
+      description: "Successfully delivered over 50 projects for clients worldwide.",
+      icon: CheckCircle
+    },
+    {
+      year: "2023",
+      title: "Innovation Award",
+      description: "Recognized for excellence in web development and design.",
+      icon: Star
+    }
+  ];
+
+  // Use admin team members or fallback to default
+  const displayTeamMembers = (aboutSettings?.team_members?.filter((m: TeamMember) => m.status === 'active')) || defaultTeamMembers;
 
   // Loading state
   if (isLoadingSettings) {
@@ -292,7 +270,7 @@ const About: React.FC = () => {
       <section className="py-12 relative -mt-20 z-10">
         <div className="container-custom">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
-            {displayStats.map((stat, index) => (
+            {stats.map((stat, index) => (
               <motion.div
                 key={index}
                 initial={{ opacity: 0, y: 20 }}
@@ -474,8 +452,8 @@ const About: React.FC = () => {
             subtitle="Key milestones in our growth story"
           />
           <div className="max-w-4xl mx-auto">
-            {displayMilestones && displayMilestones.length > 0 ? (
-              displayMilestones.map((milestone, index) => {
+            {milestones && milestones.length > 0 ? (
+              milestones.map((milestone, index) => {
                 const IconComponent = getIconComponent(milestone.icon);
                 return (
                   <motion.div
