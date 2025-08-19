@@ -108,6 +108,13 @@ const AdminLayout: React.FC = () => {
       path: '/admin/dashboard/about-content',
       description: 'Manage about page content'
     },
+    { 
+      id: 'settings', 
+      label: 'Settings', 
+      icon: SettingsIcon, 
+      path: '/admin/dashboard/settings',
+      description: 'System settings'
+    },
   ];
 
   useEffect(() => {
