@@ -373,6 +373,8 @@ const createSampleData = async () => {
       await defaultAboutSettings.save();
       logger.info('Default about settings created');
     }
+
+    logger.info('Sample data creation completed successfully');
   } catch (error) {
     logger.error('Error creating sample data:', error);
   }

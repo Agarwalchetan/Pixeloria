@@ -243,6 +243,18 @@ const Dashboard: React.FC = () => {
       icon: Plus,
       color: "orange",
     },
+    {
+      label: "Manage Home Content",
+      path: "/admin/dashboard/home-content",
+      icon: Plus,
+      color: "purple",
+    },
+    {
+      label: "Manage About Content", 
+      path: "/admin/dashboard/about-content",
+      icon: Plus,
+      color: "indigo",
+    },
   ];
 
   if (isLoading) {
@@ -372,6 +384,10 @@ const Dashboard: React.FC = () => {
                     ? "border-green-200 hover:border-green-300 hover:bg-green-50"
                     : action.color === "purple"
                     ? "border-purple-200 hover:border-purple-300 hover:bg-purple-50"
+                    : action.color === "orange"
+                    ? "border-orange-200 hover:border-orange-300 hover:bg-orange-50"
+                    : action.color === "indigo"
+                    ? "border-indigo-200 hover:border-indigo-300 hover:bg-indigo-50"
                     : "border-orange-200 hover:border-orange-300 hover:bg-orange-50"
                 }`}
               >
@@ -383,6 +399,10 @@ const Dashboard: React.FC = () => {
                       ? "bg-green-100 group-hover:bg-green-200"
                       : action.color === "purple"
                       ? "bg-purple-100 group-hover:bg-purple-200"
+                      : action.color === "orange"
+                      ? "bg-orange-100 group-hover:bg-orange-200"
+                      : action.color === "indigo"
+                      ? "bg-indigo-100 group-hover:bg-indigo-200"
                       : "bg-orange-100 group-hover:bg-orange-200"
                   }`}
                 >
@@ -395,6 +415,10 @@ const Dashboard: React.FC = () => {
                         ? "text-green-600"
                         : action.color === "purple"
                         ? "text-purple-600"
+                        : action.color === "orange"
+                        ? "text-orange-600"
+                        : action.color === "indigo"
+                        ? "text-indigo-600"
                         : "text-orange-600"
                     }
                   />
