@@ -32,21 +32,27 @@ const HomeContent: React.FC = () => {
 
   const fetchHomeSettings = async () => {
     try {
+      console.log('Fetching home settings from admin...');
       setIsLoading(true);
       const response = await adminApi.getHomeSettings();
+      console.log('Admin API response:', response);
       
       if (response.success && response.data) {
+        console.log('Setting home settings:', response.data.homeSettings);
         setHomeSettings(response.data.homeSettings);
         setAvailableProjects(response.data.availableProjects || []);
         setFeaturedTestimonials(response.data.featuredTestimonials || []);
         
         if (response.data.homeSettings?.edge_numbers) {
+          console.log('Setting edge numbers:', response.data.homeSettings.edge_numbers);
           setEdgeNumbers(response.data.homeSettings.edge_numbers);
         }
         
         if (response.data.homeSettings?.featured_case_studies) {
           setSelectedCaseStudies(response.data.homeSettings.featured_case_studies.map((cs: any) => cs.portfolio_id._id || cs.portfolio_id));
         }
+      } else {
+        console.error('Failed to fetch home settings:', response);
       }
     } catch (error) {
       console.error('Error fetching home settings:', error);
@@ -58,15 +64,25 @@ const HomeContent: React.FC = () => {
   const handleSaveNumbers = async () => {
     if (!canEdit) return;
     
+    console.log('Saving edge numbers:', edgeNumbers);
     setIsSaving(true);
     try {
       const response = await adminApi.updateHomeSettings({
         edge_numbers: edgeNumbers
       });
+      console.log('Save response:', response);
       
       if (response.success) {
         setHomeSettings(response.data.homeSettings);
-        alert('Pixeloria Edge numbers updated successfully!');
+        // Show success message
+        const successDiv = document.createElement('div');
+        successDiv.className = 'fixed top-4 right-4 bg-green-500 text-white px-6 py-3 rounded-lg shadow-lg z-50';
+        successDiv.textContent = 'Pixeloria Edge numbers updated successfully!';
+        document.body.appendChild(successDiv);
+        setTimeout(() => document.body.removeChild(successDiv), 3000);
+      } else {
+        console.error('Failed to save:', response);
+        alert('Failed to update numbers: ' + (response.error || 'Unknown error'));
       }
     } catch (error) {
       console.error('Error updating numbers:', error);

@@ -8,9 +8,11 @@ import path from 'path';
 // HOME SETTINGS CONTROLLERS
 export const getHomeSettings = async (req, res, next) => {
   try {
+    console.log('Getting home settings...');
     let homeSettings = await HomeSettings.findOne().populate('featured_case_studies.portfolio_id');
     
     if (!homeSettings) {
+      console.log('No home settings found, creating default...');
       // Create default home settings
       homeSettings = new HomeSettings({
         edge_numbers: {
@@ -22,14 +24,20 @@ export const getHomeSettings = async (req, res, next) => {
         featured_case_studies: []
       });
       await homeSettings.save();
+      console.log('Default home settings created:', homeSettings);
     }
 
+    console.log('Home settings found:', homeSettings);
+    
     // Get all portfolio projects for case study selection
     const portfolioProjects = await Portfolio.find({ status: 'published' }).select('title _id category');
+    console.log('Portfolio projects found:', portfolioProjects.length);
     
     // Get featured testimonials for "Voices that Trust"
     const featuredTestimonials = await Testimonial.find({ status: 'published' }).limit(10);
+    console.log('Featured testimonials found:', featuredTestimonials.length);
 
+    console.log('Sending response with home settings...');
     res.json({
       success: true,
       data: {
@@ -39,25 +47,30 @@ export const getHomeSettings = async (req, res, next) => {
       }
     });
   } catch (error) {
+    console.error('Error in getHomeSettings:', error);
     next(error);
   }
 };
 
 export const updateHomeSettings = async (req, res, next) => {
   try {
+    console.log('Updating home settings with:', req.body);
     const { edge_numbers, featured_case_studies } = req.body;
     
     let homeSettings = await HomeSettings.findOne();
     
     if (!homeSettings) {
+      console.log('Creating new home settings...');
       homeSettings = new HomeSettings();
     }
     
     if (edge_numbers) {
+      console.log('Updating edge numbers:', edge_numbers);
       homeSettings.edge_numbers = { ...homeSettings.edge_numbers, ...edge_numbers };
     }
     
     if (featured_case_studies) {
+      console.log('Updating featured case studies:', featured_case_studies);
       homeSettings.featured_case_studies = featured_case_studies;
     }
     
@@ -65,14 +78,29 @@ export const updateHomeSettings = async (req, res, next) => {
     homeSettings.updated_by = req.user._id;
     
     await homeSettings.save();
-    await homeSettings.populate('featured_case_studies.portfolio_id');
+    console.log('Home settings saved:', homeSettings);
+    
+    // Manually populate the featured case studies
+    if (homeSettings.featured_case_studies && homeSettings.featured_case_studies.length > 0) {
+      for (let i = 0; i < homeSettings.featured_case_studies.length; i++) {
+        const caseStudy = homeSettings.featured_case_studies[i];
+        if (caseStudy.portfolio_id) {
+          const project = await Portfolio.findById(caseStudy.portfolio_id);
+          if (project) {
+            homeSettings.featured_case_studies[i].portfolio_id = project;
+          }
+        }
+      }
+    }
 
+    console.log('Sending updated home settings response...');
     res.json({
       success: true,
       message: 'Home settings updated successfully',
       data: { homeSettings }
     });
   } catch (error) {
+    console.error('Error in updateHomeSettings:', error);
     next(error);
   }
 };

@@ -184,13 +184,21 @@ export const adminApi = {
     homeSettings: any;
     availableProjects: any[];
     featuredTestimonials: any[];
-  }>('/admin/dashboard/home-settings'),
+  }>('/admin/dashboard/home-settings').then(response => {
+    console.log('API getHomeSettings response:', response);
+    return response;
+  }),
   
-  updateHomeSettings: (settings: any) => 
-    fetchApi<{ homeSettings: any }>('/admin/dashboard/home-settings', {
+  updateHomeSettings: (settings: any) => {
+    console.log('API updateHomeSettings called with:', settings);
+    return fetchApi<{ homeSettings: any }>('/admin/dashboard/home-settings', {
       method: 'PUT',
       body: JSON.stringify(settings),
-    }),
+    }).then(response => {
+      console.log('API updateHomeSettings response:', response);
+      return response;
+    });
+  },
 
   // About Page Content Management
   getAboutSettings: () => fetchApi<{ aboutSettings: any }>('/admin/dashboard/about-settings'),
