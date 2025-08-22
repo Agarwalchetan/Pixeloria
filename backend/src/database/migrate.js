@@ -265,8 +265,8 @@ const createSampleData = async () => {
     if (homeSettingsCount === 0) {
       const defaultHomeSettings = new HomeSettings({
         edge_numbers: {
-          projects_delivered: 50,
-          client_satisfaction: 100,
+          projects_delivered: "50",
+          client_satisfaction: "100",
           users_reached: "1M+",
           support_hours: "24/7"
         },

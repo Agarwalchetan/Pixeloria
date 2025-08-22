@@ -184,19 +184,14 @@ export const adminApi = {
     homeSettings: any;
     availableProjects: any[];
     featuredTestimonials: any[];
-  }>('/admin/dashboard/home-settings').then(response => {
-    console.log('API getHomeSettings response:', response);
-    return response;
-  }),
+  }>('/admin/dashboard/home-settings'),
   
   updateHomeSettings: (settings: any) => {
-    console.log('API updateHomeSettings called with:', settings);
+    console.log('=== API updateHomeSettings called ===');
+    console.log('Settings to update:', settings);
     return fetchApi<{ homeSettings: any }>('/admin/dashboard/home-settings', {
       method: 'PUT',
       body: JSON.stringify(settings),
-    }).then(response => {
-      console.log('API updateHomeSettings response:', response);
-      return response;
     });
   },
 

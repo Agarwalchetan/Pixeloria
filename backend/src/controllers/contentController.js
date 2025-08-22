@@ -54,54 +54,71 @@ export const getHomeSettings = async (req, res, next) => {
 
 export const updateHomeSettings = async (req, res, next) => {
   try {
-    console.log('Updating home settings with:', req.body);
+    console.log('=== Updating home settings ===');
+    console.log('Request body:', req.body);
+    
     const { edge_numbers, featured_case_studies } = req.body;
     
     let homeSettings = await HomeSettings.findOne();
     
     if (!homeSettings) {
-      console.log('Creating new home settings...');
+      console.log('Creating new home settings document...');
       homeSettings = new HomeSettings();
     }
     
     if (edge_numbers) {
-      console.log('Updating edge numbers:', edge_numbers);
+      console.log('Updating edge numbers from:', homeSettings.edge_numbers, 'to:', edge_numbers);
       homeSettings.edge_numbers = { ...homeSettings.edge_numbers, ...edge_numbers };
     }
     
     if (featured_case_studies) {
-      console.log('Updating featured case studies:', featured_case_studies);
+      console.log('Updating featured case studies:', featured_case_studies.length, 'items');
       homeSettings.featured_case_studies = featured_case_studies;
     }
     
     homeSettings.last_updated = new Date();
-    homeSettings.updated_by = req.user._id;
+    if (req.user && req.user._id) {
+      homeSettings.updated_by = req.user._id;
+    }
     
     await homeSettings.save();
-    console.log('Home settings saved:', homeSettings);
+    console.log('Home settings saved successfully');
+    console.log('Updated edge numbers:', homeSettings.edge_numbers);
     
     // Manually populate the featured case studies
     if (homeSettings.featured_case_studies && homeSettings.featured_case_studies.length > 0) {
+      console.log('Populating featured case studies after save...');
       for (let i = 0; i < homeSettings.featured_case_studies.length; i++) {
         const caseStudy = homeSettings.featured_case_studies[i];
         if (caseStudy.portfolio_id) {
-          const project = await Portfolio.findById(caseStudy.portfolio_id);
-          if (project) {
-            homeSettings.featured_case_studies[i].portfolio_id = project;
+          try {
+            const project = await Portfolio.findById(caseStudy.portfolio_id).lean();
+            if (project) {
+              homeSettings.featured_case_studies[i] = {
+                ...caseStudy,
+                portfolio_id: project
+              };
+            }
+          } catch (populateError) {
+            console.error('Error populating case study after save:', populateError);
           }
         }
       }
     }
 
-    console.log('Sending updated home settings response...');
+    console.log('=== Sending success response ===');
     res.json({
       success: true,
       message: 'Home settings updated successfully',
       data: { homeSettings }
     });
   } catch (error) {
-    console.error('Error in updateHomeSettings:', error);
-    next(error);
+    console.error('=== Error in updateHomeSettings ===', error);
+    res.status(500).json({
+      success: false,
+      error: error.message || 'Failed to update home settings',
+      message: 'Internal server error while updating home settings'
+    });
   }
 };
 

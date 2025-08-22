@@ -4,11 +4,11 @@ const homeSettingsSchema = new mongoose.Schema({
   // Pixeloria Edge Numbers
   edge_numbers: {
     projects_delivered: {
-      type: Number,
+      type: mongoose.Schema.Types.Mixed,
       default: 50
     },
     client_satisfaction: {
-      type: Number,
+      type: mongoose.Schema.Types.Mixed,
       default: 100
     },
     users_reached: {
