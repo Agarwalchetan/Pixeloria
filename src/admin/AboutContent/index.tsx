@@ -92,7 +92,7 @@ const AboutContent: React.FC = () => {
         about_numbers: aboutNumbers
       });
       
-      if (response.success) {
+      if (response.success && response.data ) {
         setAboutSettings(response.data.aboutSettings);
         alert('About page numbers updated successfully!');
       }
@@ -117,7 +117,7 @@ const AboutContent: React.FC = () => {
         ? await adminApi.updateTeamMember(editingTeamMember._id, teamFormData, image)
         : await adminApi.createTeamMember(teamFormData, image);
 
-      if (response.success) {
+      if (response.success && response.data) {
         setAboutSettings(response.data.aboutSettings);
         setShowTeamModal(false);
         setEditingTeamMember(null);
