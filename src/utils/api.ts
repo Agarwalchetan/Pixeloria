@@ -271,6 +271,93 @@ export const adminApi = {
     fetchApi<{ aboutSettings: any }>(`/admin/dashboard/about-settings/journey/${id}`, {
       method: 'DELETE',
     }),
+
+  // Calculator API functions
+  getCalculatorSubmissions: () => fetchApi<{ submissions: any[]; total: number }>('/admin/dashboard/calculator/submissions'),
+  
+  exportCalculatorPDF: (id: string) => fetchApi<{ pdfUrl: string }>(`/admin/dashboard/calculator/submissions/${id}/pdf`),
+  
+  updateCalculatorSubmissionStatus: (id: string, status: string) => 
+    fetchApi<{ submission: any }>(`/admin/dashboard/calculator/submissions/${id}/status`, {
+      method: 'PATCH',
+      body: JSON.stringify({ status }),
+    }),
+
+  // Calculator Configuration
+  getCalculatorConfig: () => fetchApi<{
+    projectTypes: any[];
+    features: any[];
+    designOptions: any[];
+    timelineOptions: any[];
+  }>('/admin/dashboard/calculator/config'),
+
+  createProjectType: (data: any) => 
+    fetchApi<{ projectType: any }>('/admin/dashboard/calculator/project-types', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    }),
+
+  updateProjectType: (id: string, data: any) => 
+    fetchApi<{ projectType: any }>(`/admin/dashboard/calculator/project-types/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    }),
+
+  deleteProjectType: (id: string) => 
+    fetchApi<{}>(`/admin/dashboard/calculator/project-types/${id}`, {
+      method: 'DELETE',
+    }),
+
+  createFeature: (data: any) => 
+    fetchApi<{ feature: any }>('/admin/dashboard/calculator/features', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    }),
+
+  updateFeature: (id: string, data: any) => 
+    fetchApi<{ feature: any }>(`/admin/dashboard/calculator/features/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    }),
+
+  deleteFeature: (id: string) => 
+    fetchApi<{}>(`/admin/dashboard/calculator/features/${id}`, {
+      method: 'DELETE',
+    }),
+
+  createDesignOption: (data: any) => 
+    fetchApi<{ designOption: any }>('/admin/dashboard/calculator/design-options', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    }),
+
+  updateDesignOption: (id: string, data: any) => 
+    fetchApi<{ designOption: any }>(`/admin/dashboard/calculator/design-options/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    }),
+
+  deleteDesignOption: (id: string) => 
+    fetchApi<{}>(`/admin/dashboard/calculator/design-options/${id}`, {
+      method: 'DELETE',
+    }),
+
+  createTimelineOption: (data: any) => 
+    fetchApi<{ timelineOption: any }>('/admin/dashboard/calculator/timeline-options', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    }),
+
+  updateTimelineOption: (id: string, data: any) => 
+    fetchApi<{ timelineOption: any }>(`/admin/dashboard/calculator/timeline-options/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    }),
+
+  deleteTimelineOption: (id: string) => 
+    fetchApi<{}>(`/admin/dashboard/calculator/timeline-options/${id}`, {
+      method: 'DELETE',
+    }),
 };
 // API endpoint functions
 export const blogApi = {
@@ -497,4 +584,32 @@ export const estimateApi = {
   
   getFeatures: () => 
     fetchApi<{ features: any[]; projectTypes: any[]; timelines: any[] }>('/estimate/features'),
+};
+
+export const calculatorApi = {
+  getSubmissions: () => adminApi.getCalculatorSubmissions(),
+  exportPDF: (id: string) => adminApi.exportCalculatorPDF(id),
+  updateSubmissionStatus: (id: string, status: string) => adminApi.updateCalculatorSubmissionStatus(id, status),
+  
+  getConfig: () => adminApi.getCalculatorConfig(),
+  
+  getProjectTypes: () => fetchApi<{ projectTypes: any[] }>('/admin/dashboard/calculator/project-types'),
+  createProjectType: (data: any) => adminApi.createProjectType(data),
+  updateProjectType: (id: string, data: any) => adminApi.updateProjectType(id, data),
+  deleteProjectType: (id: string) => adminApi.deleteProjectType(id),
+  
+  getFeatures: () => fetchApi<{ features: any[] }>('/admin/dashboard/calculator/features'),
+  createFeature: (data: any) => adminApi.createFeature(data),
+  updateFeature: (id: string, data: any) => adminApi.updateFeature(id, data),
+  deleteFeature: (id: string) => adminApi.deleteFeature(id),
+  
+  getDesignOptions: () => fetchApi<{ designOptions: any[] }>('/admin/dashboard/calculator/design-options'),
+  createDesignOption: (data: any) => adminApi.createDesignOption(data),
+  updateDesignOption: (id: string, data: any) => adminApi.updateDesignOption(id, data),
+  deleteDesignOption: (id: string) => adminApi.deleteDesignOption(id),
+  
+  getTimelineOptions: () => fetchApi<{ timelineOptions: any[] }>('/admin/dashboard/calculator/timeline-options'),
+  createTimelineOption: (data: any) => adminApi.createTimelineOption(data),
+  updateTimelineOption: (id: string, data: any) => adminApi.updateTimelineOption(id, data),
+  deleteTimelineOption: (id: string) => adminApi.deleteTimelineOption(id),
 };

@@ -8,6 +8,8 @@ import {
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
+import { calculatorApi, estimateApi } from '../utils/api';
+
 interface ProjectEstimate {
   baseCost: number;
   featureCost: number;
@@ -27,6 +29,11 @@ const CostEstimator: React.FC = () => {
   const [email, setEmail] = useState('');
   const [showResults, setShowResults] = useState(false);
   const [viewMode, setViewMode] = useState<'chart' | 'list'>('chart');
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [dynamicProjectTypes, setDynamicProjectTypes] = useState<any[]>([]);
+  const [dynamicFeatures, setDynamicFeatures] = useState<any[]>([]);
+  const [dynamicDesignOptions, setDynamicDesignOptions] = useState<any[]>([]);
+  const [dynamicTimelineOptions, setDynamicTimelineOptions] = useState<any[]>([]);
   const [estimate, setEstimate] = useState<ProjectEstimate>({
     baseCost: 0,
     featureCost: 0,
@@ -220,17 +227,43 @@ const CostEstimator: React.FC = () => {
     }
   ];
 
+  // Fetch dynamic calculator configuration
+  useEffect(() => {
+    const fetchCalculatorConfig = async () => {
+      try {
+        const response = await calculatorApi.getConfig();
+        if (response.success && response.data) {
+          setDynamicProjectTypes(response.data.projectTypes || []);
+          setDynamicFeatures(response.data.features || []);
+          setDynamicDesignOptions(response.data.designOptions || []);
+          setDynamicTimelineOptions(response.data.timelineOptions || []);
+        }
+      } catch (error) {
+        console.error('Error fetching calculator config:', error);
+        // Use fallback data if API fails
+      }
+    };
+
+    fetchCalculatorConfig();
+  }, []);
+
+  // Use dynamic data if available, otherwise use fallback
+  const displayProjectTypes = dynamicProjectTypes.length > 0 ? dynamicProjectTypes : projectTypes;
+  const displayFeatures = dynamicFeatures.length > 0 ? dynamicFeatures : featureOptions;
+  const displayDesignOptions = dynamicDesignOptions.length > 0 ? dynamicDesignOptions : designOptions;
+  const displayTimelineOptions = dynamicTimelineOptions.length > 0 ? dynamicTimelineOptions : timelineOptions;
+
   const calculateEstimate = () => {
-    const selectedProject = projectTypes.find(p => p.id === projectType);
-    const selectedDesign = designOptions.find(d => d.id === designComplexity);
-    const selectedTimeline = timelineOptions.find(t => t.id === timeline);
+    const selectedProject = displayProjectTypes.find(p => p.id === projectType);
+    const selectedDesign = displayDesignOptions.find(d => d.id === designComplexity);
+    const selectedTimeline = displayTimelineOptions.find(t => t.id === timeline);
     
     if (!selectedProject || !selectedDesign || !selectedTimeline) return;
 
     const baseCost = selectedProject.baseCost;
     const pageCost = pages * 150;
     const featureCost = features.reduce((acc, featureId) => {
-      const feature = featureOptions.find(f => f.id === featureId);
+      const feature = displayFeatures.find(f => f.id === featureId);
       return acc + (feature?.cost || 0);
     }, 0);
     
@@ -282,8 +315,39 @@ const CostEstimator: React.FC = () => {
   };
 
   const handleSubmit = () => {
+    if (email) {
+      submitCalculatorData();
+    }
     setShowResults(true);
     setCurrentStep(steps.length - 1);
+  };
+
+  const submitCalculatorData = async () => {
+    setIsSubmitting(true);
+    try {
+      const submissionData = {
+        projectType,
+        pages,
+        features,
+        designComplexity,
+        timeline,
+        contactInfo: {
+          name: email.split('@')[0], // Extract name from email as fallback
+          email,
+          company: ''
+        },
+        estimate
+      };
+
+      const response = await estimateApi.calculate(submissionData);
+      if (response.success) {
+        console.log('Calculator submission saved successfully');
+      }
+    } catch (error) {
+      console.error('Error submitting calculator data:', error);
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -400,7 +464,7 @@ const CostEstimator: React.FC = () => {
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                  {projectTypes.map((type) => (
+                  {displayProjectTypes.map((type) => (
                     <motion.button
                       key={type.id}
                       onClick={() => setProjectType(type.id)}

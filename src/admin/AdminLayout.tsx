@@ -22,6 +22,7 @@ import {
   User,
   ChevronDown,
   Home,
+  Calculator,
 } from "lucide-react";
 import { authUtils } from "../utils/auth";
 
@@ -41,6 +42,7 @@ const getRoleAccess = (userRole: string) => {
       "users",
       "home-content",
       "about-content",
+      "calculator",
       "settings",
     ],
     editor: [
@@ -53,6 +55,7 @@ const getRoleAccess = (userRole: string) => {
       "contact-inquiries",
       "newsletter",
       "analytics",
+      "calculator",
     ],
     viewer: [
       "overview",
@@ -64,6 +67,7 @@ const getRoleAccess = (userRole: string) => {
       "contact-inquiries",
       "newsletter",
       "analytics",
+      "calculator",
     ],
   };
 
@@ -162,6 +166,13 @@ const AdminLayout: React.FC = () => {
       icon: User,
       path: "/admin/dashboard/about-content",
       description: "Manage about page content",
+    },
+    {
+      id: "calculator",
+      label: "Calculator",
+      icon: Calculator,
+      path: "/admin/dashboard/calculator",
+      description: "Manage cost calculator",
     },
     {
       id: "settings",

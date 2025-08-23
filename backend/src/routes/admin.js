@@ -68,6 +68,25 @@ import {
   updateJourneyMilestone,
   deleteJourneyMilestone
 } from '../controllers/contentController.js';
+
+import {
+  getCalculatorSubmissions,
+  exportCalculatorPDF,
+  updateCalculatorSubmissionStatus,
+  getCalculatorConfig,
+  createProjectType,
+  updateProjectType,
+  deleteProjectType,
+  createFeature,
+  updateFeature,
+  deleteFeature,
+  createDesignOption,
+  updateDesignOption,
+  deleteDesignOption,
+  createTimelineOption,
+  updateTimelineOption,
+  deleteTimelineOption
+} from '../controllers/calculatorController.js';
 const router = express.Router();
 
 // Apply authentication middleware to all admin routes
@@ -175,6 +194,66 @@ router.delete('/dashboard/about-settings/team/:id', requireEditor, deleteTeamMem
 router.post('/dashboard/about-settings/journey', requireEditor, createJourneyMilestone);
 router.put('/dashboard/about-settings/journey/:id', requireEditor, updateJourneyMilestone);
 router.delete('/dashboard/about-settings/journey/:id', requireEditor, deleteJourneyMilestone);
+
+// Calculator routes
+router.get('/dashboard/calculator/submissions', getCalculatorSubmissions);
+router.get('/dashboard/calculator/submissions/:id/pdf', exportCalculatorPDF);
+router.patch('/dashboard/calculator/submissions/:id/status', requireEditor, updateCalculatorSubmissionStatus);
+router.get('/dashboard/calculator/config', getCalculatorConfig);
+
+// Calculator configuration routes
+router.get('/dashboard/calculator/project-types', requireEditor, async (req, res) => {
+  try {
+    const { ProjectType } = await import('../database/models/CalculatorConfig.js');
+    const projectTypes = await ProjectType.find({ status: 'active' }).sort({ order: 1 });
+    res.json({ success: true, data: { projectTypes } });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+router.post('/dashboard/calculator/project-types', requireEditor, createProjectType);
+router.put('/dashboard/calculator/project-types/:id', requireEditor, updateProjectType);
+router.delete('/dashboard/calculator/project-types/:id', requireEditor, deleteProjectType);
+
+router.get('/dashboard/calculator/features', requireEditor, async (req, res) => {
+  try {
+    const { Feature } = await import('../database/models/CalculatorConfig.js');
+    const features = await Feature.find({ status: 'active' }).sort({ order: 1 });
+    res.json({ success: true, data: { features } });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+router.post('/dashboard/calculator/features', requireEditor, createFeature);
+router.put('/dashboard/calculator/features/:id', requireEditor, updateFeature);
+router.delete('/dashboard/calculator/features/:id', requireEditor, deleteFeature);
+
+router.get('/dashboard/calculator/design-options', requireEditor, async (req, res) => {
+  try {
+    const { DesignOption } = await import('../database/models/CalculatorConfig.js');
+    const designOptions = await DesignOption.find({ status: 'active' }).sort({ order: 1 });
+    res.json({ success: true, data: { designOptions } });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+router.post('/dashboard/calculator/design-options', requireEditor, createDesignOption);
+router.put('/dashboard/calculator/design-options/:id', requireEditor, updateDesignOption);
+router.delete('/dashboard/calculator/design-options/:id', requireEditor, deleteDesignOption);
+
+router.get('/dashboard/calculator/timeline-options', requireEditor, async (req, res) => {
+  try {
+    const { TimelineOption } = await import('../database/models/CalculatorConfig.js');
+    const timelineOptions = await TimelineOption.find({ status: 'active' }).sort({ order: 1 });
+    res.json({ success: true, data: { timelineOptions } });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+router.post('/dashboard/calculator/timeline-options', requireEditor, createTimelineOption);
+router.put('/dashboard/calculator/timeline-options/:id', requireEditor, updateTimelineOption);
+router.delete('/dashboard/calculator/timeline-options/:id', requireEditor, deleteTimelineOption);
+
 // Users routes
 router.get('/dashboard/users', requireEditor, getUsers); // Editors and admins can view users
 router.put('/dashboard/users/:id', requireEditor, updateUser);
