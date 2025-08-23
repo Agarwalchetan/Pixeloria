@@ -689,7 +689,7 @@ const CostEstimator: React.FC = () => {
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                  {timelineOptions.map((option) => (
+                  {displayTimelineOptions.map((option) => (
                     <motion.button
                       key={option.id}
                       onClick={() => setTimeline(option.id)}
