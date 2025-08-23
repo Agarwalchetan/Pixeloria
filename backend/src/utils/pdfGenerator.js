@@ -7,6 +7,12 @@ const __dirname = path.dirname(__filename);
 
 export const generatePDF = async (submission) => {
   try {
+    // Ensure PDF directory exists
+    const pdfDir = path.join('uploads/pdfs');
+    if (!fs.existsSync(pdfDir)) {
+      fs.mkdirSync(pdfDir, { recursive: true });
+    }
+
     // Create PDF content as HTML (since we can't use external PDF libraries in WebContainer)
     const htmlContent = `
       <!DOCTYPE html>
@@ -74,6 +80,10 @@ export const generatePDF = async (submission) => {
             border-radius: 8px;
             margin: 20px 0;
           }
+          @media print {
+            body { margin: 0; }
+            .no-print { display: none; }
+          }
         </style>
       </head>
       <body>
@@ -137,19 +147,42 @@ export const generatePDF = async (submission) => {
       </html>
     `;
 
-    // Save HTML file (in a real app, you'd convert this to PDF)
-    const fileName = `estimate_${submission._id}_${Date.now()}.html`;
-    const filePath = path.join('uploads/pdfs', fileName);
-    
-    // Ensure directory exists
-    const uploadsDir = path.join('uploads/pdfs');
-    if (!fs.existsSync(uploadsDir)) {
-      fs.mkdirSync(uploadsDir, { recursive: true });
+    try {
+      // Try to generate actual PDF using Puppeteer
+      const browser = await puppeteer.launch({
+        headless: true,
+        args: ['--no-sandbox', '--disable-setuid-sandbox']
+      });
+      const page = await browser.newPage();
+      await page.setContent(htmlContent);
+      
+      const fileName = `estimate_${submission._id}_${Date.now()}.pdf`;
+      const filePath = path.join(pdfDir, fileName);
+      
+      await page.pdf({
+        path: filePath,
+        format: 'A4',
+        printBackground: true,
+        margin: {
+          top: '20px',
+          right: '20px',
+          bottom: '20px',
+          left: '20px'
+        }
+      });
+      
+      await browser.close();
+      return `/uploads/pdfs/${fileName}`;
+    } catch (puppeteerError) {
+      logger.warn('Puppeteer PDF generation failed, falling back to HTML:', puppeteerError);
+      
+      // Fallback to HTML file
+      const fileName = `estimate_${submission._id}_${Date.now()}.html`;
+      const filePath = path.join(pdfDir, fileName);
+      fs.writeFileSync(filePath, htmlContent);
+      return `/uploads/pdfs/${fileName}`;
     }
 
-    fs.writeFileSync(filePath, htmlContent);
-
-    return `/uploads/pdfs/${fileName}`;
   } catch (error) {
     logger.error('PDF generation failed:', error);
     throw error;
