@@ -254,24 +254,25 @@ router.get('/features', async (req, res, next) => {
       { id: 'admin-dashboard', name: 'Admin Dashboard', cost: 2500, description: 'Administrative control panel' },
       { id: 'real-time-features', name: 'Real-time Features', cost: 3000, description: 'Live chat, notifications, etc.' },
       { id: 'third-party-integrations', name: 'Third-party Integrations', cost: 1500, description: 'External service connections' },
-    ];
+      ];
 
-    const projectTypes = [
+      projectTypes = [
       { id: 'landing-page', name: 'Landing Page', baseCost: 2000, description: 'Single page website for marketing' },
       { id: 'business-website', name: 'Business Website', baseCost: 5000, description: 'Multi-page corporate website' },
       { id: 'e-commerce', name: 'E-commerce Store', baseCost: 10000, description: 'Online store with shopping cart' },
       { id: 'web-app', name: 'Web Application', baseCost: 15000, description: 'Interactive web application' },
       { id: 'mobile-app', name: 'Mobile App', baseCost: 20000, description: 'Native or hybrid mobile application' },
       { id: 'custom-solution', name: 'Custom Solution', baseCost: 25000, description: 'Fully custom development project' },
-    ];
+      ];
 
-    const timelines = [
+      timelines = [
       { id: 'rush-1-week', name: '1 Week (Rush)', multiplier: 2.0, description: 'Expedited delivery' },
       { id: 'urgent-2-weeks', name: '2 Weeks (Urgent)', multiplier: 1.5, description: 'Fast delivery' },
       { id: 'standard-1-month', name: '1 Month (Standard)', multiplier: 1.0, description: 'Standard timeline' },
       { id: 'relaxed-2-months', name: '2 Months (Relaxed)', multiplier: 0.9, description: 'Extended timeline' },
       { id: 'flexible-3-months', name: '3+ Months (Flexible)', multiplier: 0.8, description: 'Flexible timeline' },
-    ];
+      ];
+    }
 
     res.json({
       success: true,

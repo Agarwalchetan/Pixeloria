@@ -689,7 +689,7 @@ const CostEstimator: React.FC = () => {
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                  {displayTimelineOptions.map((option) => (
+                  {timelineOptions.map((option) => (
                     <motion.button
                       key={option.id}
                       onClick={() => setTimeline(option.id)}
@@ -818,10 +818,16 @@ const CostEstimator: React.FC = () => {
                         value={email}
                         onChange={(e) => setEmail(e.target.value)}
                         className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        required
                       />
-                      <button className="w-full btn-primary flex items-center justify-center">
+                      <button 
+                        type="button"
+                        onClick={submitCalculatorData}
+                        disabled={isSubmitting || !email}
+                        className="w-full btn-primary flex items-center justify-center disabled:opacity-50"
+                      >
                         <Download className="mr-2" size={20} />
-                        Send PDF Quote
+                        {isSubmitting ? 'Generating...' : 'Send PDF Quote'}
                       </button>
                     </div>
 

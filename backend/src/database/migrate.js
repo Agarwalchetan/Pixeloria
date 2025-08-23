@@ -374,6 +374,91 @@ const createSampleData = async () => {
       logger.info('Default about settings created');
     }
 
+    // Create default calculator configuration if none exist
+    const projectTypeCount = await ProjectType.countDocuments();
+    if (projectTypeCount === 0) {
+      const defaultProjectTypes = [
+        {
+          id: 'business',
+          label: 'Business Website',
+          description: 'Professional corporate site with company info, services, and contact',
+          baseCost: 2500,
+          timeline: 3,
+          popular: false,
+          status: 'active',
+          order: 1
+        },
+        {
+          id: 'ecommerce',
+          label: 'E-Commerce Store',
+          description: 'Online store with products, cart, checkout, and payments',
+          baseCost: 4500,
+          timeline: 6,
+          popular: true,
+          status: 'active',
+          order: 2
+        },
+        {
+          id: 'webapp',
+          label: 'Web Application',
+          description: 'Custom app with user accounts, dashboards, and complex features',
+          baseCost: 6000,
+          timeline: 8,
+          popular: false,
+          status: 'active',
+          order: 3
+        }
+      ];
+      
+      await ProjectType.insertMany(defaultProjectTypes);
+      logger.info('Default project types created');
+    }
+
+    const featureCount = await Feature.countDocuments();
+    if (featureCount === 0) {
+      const defaultFeatures = [
+        {
+          id: 'auth',
+          label: 'User Authentication',
+          description: 'Login, registration, password reset, user profiles',
+          cost: 800,
+          category: 'User Management',
+          status: 'active',
+          order: 1
+        },
+        {
+          id: 'payment',
+          label: 'Payment Integration',
+          description: 'Stripe, PayPal, credit cards, subscription billing',
+          cost: 1200,
+          category: 'E-Commerce',
+          status: 'active',
+          order: 2
+        },
+        {
+          id: 'cms',
+          label: 'Content Management',
+          description: 'Easy content editing, media library, blog management',
+          cost: 900,
+          category: 'Content',
+          status: 'active',
+          order: 3
+        },
+        {
+          id: 'analytics',
+          label: 'Analytics Dashboard',
+          description: 'Custom analytics, reporting, data visualization',
+          cost: 1000,
+          category: 'Analytics',
+          status: 'active',
+          order: 4
+        }
+      ];
+      
+      await Feature.insertMany(defaultFeatures);
+      logger.info('Default features created');
+    }
+
     logger.info('Sample data creation completed successfully');
   } catch (error) {
     logger.error('Error creating sample data:', error);
