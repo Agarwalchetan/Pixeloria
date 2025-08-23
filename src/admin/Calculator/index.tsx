@@ -2,8 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Plus, Search, Edit, Trash2, DollarSign,
-  X, Save, Eye, Download, Settings, ArrowUp, ArrowDown,
-  FileText, BarChart3, TrendingUp, Clock, Zap
+  X, Eye, Download, Settings,
+  FileText, BarChart3, TrendingUp, Clock, Calculator as CalculatorIcon
 } from 'lucide-react';
 import { calculatorApi } from '../../utils/api';
 import { authUtils } from '../../utils/auth';
@@ -175,10 +175,49 @@ const Calculator: React.FC = () => {
     }
   };
 
+  const handleViewSubmission = async (submissionId: string) => {
+    try {
+      const token = localStorage.getItem('adminToken') || sessionStorage.getItem('adminToken');
+      console.log('Token:', token ? 'Found' : 'Not found');
+      console.log('Submission ID:', submissionId);
+      console.log('Making request to:', `http://localhost:50001/api/admin/dashboard/calculator/submissions/${submissionId}/view`);
+      
+      const response = await fetch(`http://localhost:50001/api/admin/dashboard/calculator/submissions/${submissionId}/view`, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      
+      console.log('Response received, status:', response.status);
+      
+      if (response.ok) {
+        console.log('Response OK, getting HTML content...');
+        const htmlContent = await response.text();
+        console.log('HTML content length:', htmlContent.length);
+        const newWindow = window.open('', '_blank');
+        if (newWindow) {
+          newWindow.document.write(htmlContent);
+          newWindow.document.close();
+          console.log('New window opened successfully');
+        } else {
+          console.error('Failed to open new window - popup blocked?');
+          alert('Popup blocked. Please allow popups for this site.');
+        }
+      } else {
+        const errorText = await response.text();
+        console.error('Error response:', errorText);
+        alert(`Failed to load submission details: ${response.status}`);
+      }
+    } catch (error) {
+      console.error('Error viewing submission:', error);
+      alert('Error loading submission details');
+    }
+  };
+
   const handleExportPDF = async (submissionId: string) => {
     try {
       const response = await calculatorApi.exportPDF(submissionId);
-      if (response.success) {
+      if (response.success && response.data) {
         // Create download link
         const link = document.createElement('a');
         link.href = `http://localhost:5000${response.data.pdfUrl}`;
@@ -344,7 +383,7 @@ const Calculator: React.FC = () => {
             rel="noopener noreferrer"
             className="flex items-center space-x-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
           >
-            <Calculator size={16} />
+            <CalculatorIcon size={16} />
             <span>Preview Calculator</span>
           </a>
         </div>
@@ -470,6 +509,13 @@ const Calculator: React.FC = () => {
                         <td className="px-6 py-4">
                           <div className="flex items-center space-x-2">
                             <button
+                              onClick={() => handleViewSubmission(submission._id)}
+                              className="p-2 text-blue-600 hover:text-blue-800 hover:bg-blue-50 rounded-lg transition-colors"
+                              title="View Details"
+                            >
+                              <Eye size={16} />
+                            </button>
+                            <button
                               onClick={() => handleExportPDF(submission._id)}
                               className="p-2 text-gray-400 hover:text-green-600 transition-colors"
                               title="Export PDF"
@@ -478,7 +524,7 @@ const Calculator: React.FC = () => {
                             </button>
                             <a
                               href={`mailto:${submission.contactInfo.email}`}
-                              className="p-2 text-gray-400 hover:text-blue-600 transition-colors"
+                              className="p-2 text-gray-400 hover:text-purple-600 transition-colors"
                               title="Contact Client"
                             >
                               <FileText size={16} />
@@ -645,7 +691,7 @@ const Calculator: React.FC = () => {
                       <p className="text-sm font-medium text-gray-600">Total Submissions</p>
                       <p className="text-2xl font-bold text-gray-900">{submissions.length}</p>
                     </div>
-                    <Calculator className="w-8 h-8 text-blue-600" />
+                    <CalculatorIcon className="w-8 h-8 text-blue-600" />
                   </div>
                 </div>
 

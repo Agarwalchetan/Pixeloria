@@ -1,4 +1,4 @@
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:50001/api';
 
 export interface ApiResponse<T> {
   success: boolean;
@@ -580,6 +580,12 @@ export const estimateApi = {
     fetchApi<{ estimate: any; projectData: any }>('/estimate', {
       method: 'POST',
       body: JSON.stringify(estimateData),
+    }),
+  
+  submitCalculator: (calculatorData: any) => 
+    fetchApi<{ submissionId: string; pdfGenerated: boolean }>('/estimate/calculator', {
+      method: 'POST',
+      body: JSON.stringify(calculatorData),
     }),
   
   getFeatures: () => 

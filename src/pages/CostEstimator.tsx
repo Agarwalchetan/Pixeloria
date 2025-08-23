@@ -303,8 +303,10 @@ const CostEstimator: React.FC = () => {
   }, [projectType, pages, features, designComplexity, timeline]);
 
   const nextStep = () => {
+    console.log('nextStep called, currentStep:', currentStep, 'steps.length:', steps.length);
     if (currentStep < steps.length - 1) {
       setCurrentStep(currentStep + 1);
+      console.log('Moving to step:', currentStep + 1);
     }
   };
 
@@ -339,12 +341,14 @@ const CostEstimator: React.FC = () => {
         estimate
       };
 
-      const response = await estimateApi.calculate(submissionData);
+      const response = await estimateApi.submitCalculator(submissionData);
       if (response.success) {
         console.log('Calculator submission saved successfully');
+        alert('Quote sent successfully! Check your email for the detailed PDF quote.');
       }
     } catch (error) {
       console.error('Error submitting calculator data:', error);
+      alert('Failed to send quote. Please try again or contact us directly.');
     } finally {
       setIsSubmitting(false);
     }
@@ -481,9 +485,9 @@ const CostEstimator: React.FC = () => {
                           Popular
                         </div>
                       )}
-                      <type.icon className={`w-12 h-12 mb-4 ${
+                      {type.icon && <type.icon className={`w-12 h-12 mb-4 ${
                         projectType === type.id ? 'text-blue-600' : 'text-gray-600'
-                      }`} />
+                      }`} />}
                       <h3 className="font-bold text-lg text-gray-900 mb-2">{type.label}</h3>
                       <p className="text-sm text-gray-600 mb-4">{type.description}</p>
                       <div className="flex justify-between text-sm">
