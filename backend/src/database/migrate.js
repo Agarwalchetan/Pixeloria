@@ -1,6 +1,7 @@
 import bcrypt from 'bcryptjs';
 import { connectDB } from './connection.js';
 import User from './models/User.js';
+import { ProjectType, Feature, DesignOption, TimelineOption } from './models/CalculatorConfig.js';
 import { logger } from '../utils/logger.js';
 
 export const initializeDatabase = async () => {

@@ -1,8 +1,11 @@
+// Load environment variables FIRST
+import dotenv from 'dotenv';
+dotenv.config();
+
 import express from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
 import morgan from 'morgan';
-import dotenv from 'dotenv';
 import rateLimit from 'express-rate-limit';
 import swaggerJsdoc from 'swagger-jsdoc';
 import swaggerUi from 'swagger-ui-express';
@@ -29,8 +32,13 @@ import adminRoutes from './routes/admin.js';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-// Load environment variables
-dotenv.config({ path: path.resolve(__dirname, '../.env') });
+// Environment variables already loaded at top
+console.log('🔍 Debug: Email config loaded:', {
+  EMAIL_HOST: process.env.EMAIL_HOST,
+  EMAIL_USER: process.env.EMAIL_USER,
+  EMAIL_PASSWORD: process.env.EMAIL_PASSWORD ? 'SET' : 'NOT SET',
+  EMAIL_FROM: process.env.EMAIL_FROM
+});
 
 // Validate MongoDB URI presence
 const mongoUri = process.env.MONGODB_URI || process.env.MONGO_URI;
@@ -41,7 +49,7 @@ if (!mongoUri) {
 }
 
 const app = express();
-const PORT = process.env.PORT || 5000;
+const PORT = process.env.PORT || 3001;
 
 // Swagger setup
 const swaggerOptions = {
@@ -133,10 +141,39 @@ async function startServer() {
     await connectDB();
     await initializeDatabase();
 
-    app.listen(PORT, () => {
+    const server = app.listen(PORT, () => {
       logger.info(`🚀 Server running on http://localhost:${PORT}`);
       logger.info(`📘 API docs available at /api-docs`);
     });
+
+    server.on('error', (error) => {
+      if (error.code === 'EADDRINUSE') {
+        logger.error(`❌ Port ${PORT} is already in use. Trying alternative ports...`);
+        
+        // Try ports 5001, 5002, 5003, etc.
+        const tryPort = (port) => {
+          const altServer = app.listen(port, () => {
+            logger.info(`🚀 Server running on http://localhost:${port}`);
+            logger.info(`📘 API docs available at /api-docs`);
+          });
+          
+          altServer.on('error', (err) => {
+            if (err.code === 'EADDRINUSE' && port < 5010) {
+              tryPort(port + 1);
+            } else {
+              logger.error('❌ All ports in use or server error:', err);
+              process.exit(1);
+            }
+          });
+        };
+        
+        tryPort(PORT + 1);
+      } else {
+        logger.error('❌ Server error:', error);
+        process.exit(1);
+      }
+    });
+
   } catch (error) {
     logger.error('❌ Failed to start server:', error);
     process.exit(1);
