@@ -1,6 +1,7 @@
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import puppeteer from 'puppeteer';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -13,7 +14,7 @@ export const generatePDF = async (submission) => {
       fs.mkdirSync(pdfDir, { recursive: true });
     }
 
-    // Create PDF content as HTML (since we can't use external PDF libraries in WebContainer)
+    // Create HTML content for PDF generation
     const htmlContent = `
       <!DOCTYPE html>
       <html>
@@ -147,41 +148,34 @@ export const generatePDF = async (submission) => {
       </html>
     `;
 
-    try {
-      // Try to generate actual PDF using Puppeteer
-      const browser = await puppeteer.launch({
-        headless: true,
-        args: ['--no-sandbox', '--disable-setuid-sandbox']
-      });
-      const page = await browser.newPage();
-      await page.setContent(htmlContent);
-      
-      const fileName = `estimate_${submission._id}_${Date.now()}.pdf`;
-      const filePath = path.join(pdfDir, fileName);
-      
-      await page.pdf({
-        path: filePath,
-        format: 'A4',
-        printBackground: true,
-        margin: {
-          top: '20px',
-          right: '20px',
-          bottom: '20px',
-          left: '20px'
-        }
-      });
-      
-      await browser.close();
-      return `/uploads/pdfs/${fileName}`;
-    } catch (puppeteerError) {
-      logger.warn('Puppeteer PDF generation failed, falling back to HTML:', puppeteerError);
-      
-      // Fallback to HTML file
-      const fileName = `estimate_${submission._id}_${Date.now()}.html`;
-      const filePath = path.join(pdfDir, fileName);
-      fs.writeFileSync(filePath, htmlContent);
-      return `/uploads/pdfs/${fileName}`;
-    }
+    // Generate actual PDF using Puppeteer
+    const fileName = `estimate_${submission._id}_${Date.now()}.pdf`;
+    const filePath = path.join(pdfDir, fileName);
+    
+    const browser = await puppeteer.launch({
+      headless: true,
+      args: ['--no-sandbox', '--disable-setuid-sandbox']
+    });
+    
+    const page = await browser.newPage();
+    await page.setContent(htmlContent, { waitUntil: 'networkidle0' });
+    
+    await page.pdf({
+      path: filePath,
+      format: 'A4',
+      printBackground: true,
+      margin: {
+        top: '20px',
+        right: '20px',
+        bottom: '20px',
+        left: '20px'
+      }
+    });
+    
+    await browser.close();
+    
+    logger.info('PDF generated successfully:', fileName);
+    return filePath;
 
   } catch (error) {
     logger.error('PDF generation failed:', error);
