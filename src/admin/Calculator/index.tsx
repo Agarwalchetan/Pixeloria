@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
-  Plus, Search, Edit, Trash2, Calculator, DollarSign,
+  Plus, Search, Edit, Trash2, DollarSign,
   X, Save, Eye, Download, Settings, ArrowUp, ArrowDown,
   FileText, BarChart3, TrendingUp, Clock, Zap
 } from 'lucide-react';
