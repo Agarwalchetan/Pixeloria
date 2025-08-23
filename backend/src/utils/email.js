@@ -1,17 +1,62 @@
 import { createTransport } from 'nodemailer';
 import { logger } from './logger.js';
 
-const transporter = createTransport({
-  host: process.env.EMAIL_HOST,
-  port: process.env.EMAIL_PORT,
-  secure: false,
-  auth: {
-    user: process.env.EMAIL_USER,
-    pass: process.env.EMAIL_PASSWORD,
-  },
-});
+// Check if email configuration is properly set
+const isEmailConfigured = () => {
+  return process.env.EMAIL_HOST && 
+         process.env.EMAIL_USER && 
+         process.env.EMAIL_PASSWORD &&
+         process.env.EMAIL_USER !== 'your_email@gmail.com' &&
+         process.env.EMAIL_PASSWORD !== 'your_app_password';
+};
+
+let transporter = null;
+
+// Initialize transporter lazily when first needed
+const getTransporter = () => {
+  if (transporter === null) {
+    if (isEmailConfigured()) {
+      try {
+        transporter = createTransport({
+          host: process.env.EMAIL_HOST,
+          port: parseInt(process.env.EMAIL_PORT) || 587,
+          secure: false,
+          auth: {
+            user: process.env.EMAIL_USER,
+            pass: process.env.EMAIL_PASSWORD,
+          },
+        });
+        logger.info('Email transporter configured successfully');
+      } catch (error) {
+        logger.error('Failed to create email transporter:', error);
+        transporter = false; // Mark as failed
+      }
+    } else {
+      logger.warn('Email configuration not properly set. Email functionality will be disabled.');
+      logger.warn('Current config:', {
+        host: process.env.EMAIL_HOST,
+        user: process.env.EMAIL_USER,
+        hasPassword: !!process.env.EMAIL_PASSWORD
+      });
+      transporter = false; // Mark as not configured
+    }
+  }
+  return transporter;
+};
 
 export const sendEmail = async (options) => {
+  const currentTransporter = getTransporter();
+  
+  if (!currentTransporter) {
+    logger.warn('Email not configured. Skipping email send to:', options.to);
+    logger.info('Email content that would have been sent:', {
+      to: options.to,
+      subject: options.subject,
+      html: options.html?.substring(0, 200) + '...'
+    });
+    return { messageId: 'email-not-configured' };
+  }
+
   try {
     const mailOptions = {
       from: process.env.EMAIL_FROM,
@@ -19,9 +64,10 @@ export const sendEmail = async (options) => {
       subject: options.subject,
       text: options.text,
       html: options.html,
+      attachments: options.attachments
     };
 
-    const info = await transporter.sendMail(mailOptions);
+    const info = await currentTransporter.sendMail(mailOptions);
     logger.info('Email sent successfully:', info.messageId);
     return info;
   } catch (error) {
