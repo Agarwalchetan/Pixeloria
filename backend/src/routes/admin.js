@@ -1,5 +1,5 @@
 import express from 'express';
-import { authenticateToken, requireAdmin } from '../middleware/auth.js';
+import { authenticateToken, requireAdmin, requireAuth } from '../middleware/auth.js';
 import { requireFullAdmin, requireEditor } from '../middleware/auth.js';
 import { uploadMiddleware } from '../utils/fileUpload.js';
 import { validate, schemas } from '../middleware/validation.js';
@@ -71,7 +71,7 @@ import {
 
 import {
   getCalculatorSubmissions,
-  exportCalculatorPDF,
+  viewCalculatorSubmission,
   updateCalculatorSubmissionStatus,
   getCalculatorConfig,
   createProjectType,
@@ -197,7 +197,7 @@ router.delete('/dashboard/about-settings/journey/:id', requireEditor, deleteJour
 
 // Calculator routes
 router.get('/dashboard/calculator/submissions', getCalculatorSubmissions);
-router.get('/dashboard/calculator/submissions/:id/pdf', exportCalculatorPDF);
+router.get('/dashboard/calculator/submissions/:id/view', authenticateToken, requireAdmin, viewCalculatorSubmission);
 router.patch('/dashboard/calculator/submissions/:id/status', requireEditor, updateCalculatorSubmissionStatus);
 router.get('/dashboard/calculator/config', getCalculatorConfig);
 

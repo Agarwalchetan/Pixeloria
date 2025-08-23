@@ -2,6 +2,8 @@ import express from 'express';
 import { validate, schemas } from '../middleware/validation.js';
 import { sendEmail } from '../utils/email.js';
 import { logger } from '../utils/logger.js';
+import CalculatorSubmission from '../database/models/CalculatorSubmission.js';
+import { generatePDF } from '../utils/pdfGenerator.js';
 
 const router = express.Router();
 
@@ -144,6 +146,182 @@ const calculateProjectCost = (projectData) => {
  *       400:
  *         description: Validation error
  */
+router.post('/calculator', async (req, res, next) => {
+  try {
+    logger.info('Calculator submission received:', {
+      hasContactInfo: !!req.body.contactInfo,
+      email: req.body.contactInfo?.email,
+      projectType: req.body.projectType
+    });
+
+    const {
+      projectType,
+      pages,
+      features,
+      designComplexity,
+      timeline,
+      contactInfo,
+      estimate
+    } = req.body;
+
+    if (!contactInfo || !contactInfo.email) {
+      logger.warn('Calculator submission missing contact info');
+      return res.status(400).json({
+        success: false,
+        message: 'Contact information is required'
+      });
+    }
+
+    // Save submission to database
+    const submission = new CalculatorSubmission({
+      projectType,
+      pages,
+      features,
+      designComplexity,
+      timeline,
+      contactInfo,
+      estimate,
+      status: 'new'
+    });
+
+    await submission.save();
+    logger.info('Calculator submission saved to database:', submission._id);
+
+    // Generate PDF
+    let pdfPath = null;
+    try {
+      pdfPath = await generatePDF(submission);
+    } catch (pdfError) {
+      logger.error('PDF generation failed:', pdfError);
+    }
+
+    // Send email with PDF attachment
+    if (contactInfo && contactInfo.email) {
+      try {
+        logger.info('Attempting to send calculator email to:', contactInfo.email);
+        const emailOptions = {
+          to: contactInfo.email,
+          subject: 'Your Detailed Project Quote - Pixeloria',
+          html: `
+            <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+              <h2 style="color: #2563eb;">Your Project Quote</h2>
+              <p>Hi ${contactInfo.name},</p>
+              <p>Thank you for using our project calculator! We've prepared a detailed quote for your project.</p>
+              
+              <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 30px; border-radius: 12px; text-align: center; margin: 20px 0;">
+                <h3 style="margin: 0 0 10px 0; font-size: 24px;">Total Project Cost</h3>
+                <div style="font-size: 48px; font-weight: bold; margin: 10px 0;">${estimate.totalCost.toLocaleString()}</div>
+                <p style="margin: 0; opacity: 0.9;">Estimated Timeline: ${estimate.timeline}</p>
+              </div>
+
+              <div style="background-color: #f8fafc; padding: 20px; border-radius: 8px; margin: 20px 0;">
+                <h3 style="color: #1e293b; margin-top: 0;">Project Summary</h3>
+                <p><strong>Project Type:</strong> ${projectType}</p>
+                <p><strong>Pages:</strong> ${pages}</p>
+                <p><strong>Features:</strong> ${features.join(', ')}</p>
+                <p><strong>Design Complexity:</strong> ${designComplexity}</p>
+                <p><strong>Timeline:</strong> ${timeline}</p>
+              </div>
+
+              <div style="background-color: #ecfdf5; padding: 20px; border-radius: 8px; margin: 20px 0;">
+                <h3 style="color: #065f46; margin-top: 0;">Cost Breakdown</h3>
+                ${estimate.breakdown.map(item => `
+                  <div style="display: flex; justify-content: space-between; margin: 8px 0;">
+                    <span>${item.label}:</span>
+                    <strong>$${item.cost.toLocaleString()}</strong>
+                  </div>
+                `).join('')}
+              </div>
+
+              <p>This quote is valid for 30 days. We'd love to discuss your project in more detail!</p>
+              
+              <div style="text-align: center; margin: 30px 0;">
+                <a href="mailto:hello@pixeloria.com" style="background-color: #2563eb; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; display: inline-block;">Let's Discuss Your Project</a>
+              </div>
+              
+              <p style="color: #64748b; font-size: 14px;">
+                Best regards,<br>
+                The Pixeloria Team<br>
+                <a href="https://pixeloria.com">pixeloria.com</a>
+              </p>
+            </div>
+          `
+        };
+
+        // Add PDF attachment if generated successfully
+        if (pdfPath) {
+          emailOptions.attachments = [{
+            filename: `project-quote-${submission._id}.pdf`,
+            path: pdfPath,
+            contentType: 'application/pdf'
+          }];
+        }
+
+        const emailResult = await sendEmail(emailOptions);
+        logger.info('User email sent successfully:', emailResult.messageId);
+
+        // Send notification to admin
+        const adminEmailResult = await sendEmail({
+          to: process.env.ADMIN_EMAIL || 'admin@pixeloria.com',
+          subject: `New Calculator Submission from ${contactInfo.name}`,
+          html: `
+            <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+              <h2 style="color: #1e40af;">New Calculator Submission</h2>
+              
+              <h3>Contact Information:</h3>
+              <p><strong>Name:</strong> ${contactInfo.name}</p>
+              <p><strong>Email:</strong> ${contactInfo.email}</p>
+              <p><strong>Phone:</strong> ${contactInfo.phone}</p>
+              <p><strong>Company:</strong> ${contactInfo.company}</p>
+              
+              <h3>Project Details:</h3>
+              <p><strong>Project Type:</strong> ${projectType}</p>
+              <p><strong>Budget Range:</strong> ${req.body.budgetRange}</p>
+              <p><strong>Timeline:</strong> ${timeline}</p>
+              <p><strong>Description:</strong> ${req.body.description}</p>
+              
+              <h3>Selected Features:</h3>
+              <ul>
+                ${features.map(feature => `<li>${feature.name} - $${feature.price}</li>`).join('')}
+              </ul>
+              
+              <h3>Total Estimate:</h3>
+              <p style="font-size: 24px; font-weight: bold; color: #059669;">$${estimate.totalCost.toLocaleString()}</p>
+              
+              <p style="color: #64748b; font-size: 14px;">
+                This submission was received on ${new Date().toLocaleString()}
+              </p>
+            </div>
+          `,
+          attachments: pdfPath ? [{
+            filename: `project-quote-${submission._id}.pdf`,
+            path: pdfPath,
+            contentType: 'application/pdf'
+          }] : []
+        });
+        logger.info('Admin email sent successfully:', adminEmailResult.messageId);
+
+      } catch (emailError) {
+        logger.error('Calculator email failed:', emailError);
+        logger.error('Email error details:', emailError.stack);
+      }
+    }
+
+    res.json({
+      success: true,
+      message: 'Quote generated and sent successfully',
+      data: {
+        submissionId: submission._id,
+        pdfGenerated: !!pdfPath
+      }
+    });
+
+  } catch (error) {
+    logger.error('Calculator submission error:', error);
+    next(error);
+  }
+});
+
 router.post('/', validate(schemas.estimate), async (req, res, next) => {
   try {
     const projectData = req.body;
