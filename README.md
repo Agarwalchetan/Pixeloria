@@ -1,4 +1,4 @@
-<<<<<<< HEAD
+# Pixeloria
 
 A comprehensive web application for digital services with an interactive cost estimator, admin dashboard, and client management system.
 
@@ -213,9 +213,10 @@ For support and questions:
 ---
 
 **Built with ❤️ by the Pixeloria Team**
-=======
+
+## 🔧 Current Development Tasks
+
 4. Calculator admin page is Frozen.
 5. Update All admins buttons and perks.
 6. In chatbox, Create an option by which it esbalish contact between admin and user and chat history is also saved before doing it ai ask some question as name,email,whattodo and then connect with live admin member.
 7. Setup the admin portal ui at it peak for all tabs
->>>>>>> 39c04e2a4f87d727621fe779f89e5d3274bc6ee5

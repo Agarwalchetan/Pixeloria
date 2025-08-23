@@ -201,39 +201,62 @@ export const viewCalculatorSubmission = async (req, res, next) => {
             <div class="info-grid">
               <div class="info-item">
                 <div class="info-label">Project Type</div>
-                <div class="info-value">${submission.projectDetails?.projectType || 'N/A'}</div>
+                <div class="info-value">${submission.projectType || 'N/A'}</div>
               </div>
               <div class="info-item">
-                <div class="info-label">Budget Range</div>
-                <div class="info-value">${submission.projectDetails?.budgetRange || 'N/A'}</div>
+                <div class="info-label">Pages</div>
+                <div class="info-value">${submission.pages || 'N/A'}</div>
+              </div>
+              <div class="info-item">
+                <div class="info-label">Design Complexity</div>
+                <div class="info-value">${submission.designComplexity || 'N/A'}</div>
               </div>
               <div class="info-item">
                 <div class="info-label">Timeline</div>
-                <div class="info-value">${submission.projectDetails?.timeline || 'N/A'}</div>
+                <div class="info-value">${submission.timeline || 'N/A'}</div>
               </div>
               <div class="info-item">
                 <div class="info-label">Status</div>
                 <div class="info-value">${submission.status}</div>
               </div>
             </div>
-            ${submission.projectDetails?.description ? `
-              <div class="info-item" style="grid-column: 1 / -1;">
-                <div class="info-label">Project Description</div>
-                <div class="info-value">${submission.projectDetails.description}</div>
-              </div>
-            ` : ''}
           </div>
 
           <div class="section">
             <h3>Selected Features</h3>
             <ul class="features-list">
-              ${submission.selectedFeatures?.map(feature => `
-                <li>
-                  <span>${feature.name}</span>
-                  <span>$${feature.price?.toLocaleString() || '0'}</span>
-                </li>
-              `).join('') || '<li>No features selected</li>'}
+              ${submission.features && submission.features.length > 0 ? 
+                submission.features.map(feature => `
+                  <li>
+                    <span>${feature}</span>
+                    <span>✓ Selected</span>
+                  </li>
+                `).join('') : 
+                '<li>No features selected</li>'
+              }
             </ul>
+          </div>
+
+          <div class="section">
+            <h3>Cost Breakdown</h3>
+            <div class="info-grid">
+              <div class="info-item">
+                <div class="info-label">Base Cost</div>
+                <div class="info-value">$${submission.estimate?.baseCost?.toLocaleString() || '0'}</div>
+              </div>
+              <div class="info-item">
+                <div class="info-label">Features Cost</div>
+                <div class="info-value">$${submission.estimate?.featureCost?.toLocaleString() || '0'}</div>
+              </div>
+              <div class="info-item">
+                <div class="info-label">Design Cost</div>
+                <div class="info-value">$${submission.estimate?.designCost?.toLocaleString() || '0'}</div>
+              </div>
+              <div class="info-item">
+                <div class="info-label">Estimated Timeline</div>
+                <div class="info-value">${submission.estimate?.timeline || 'N/A'}</div>
+              </div>
+            </div>
           </div>
 
           <div class="total-cost">
