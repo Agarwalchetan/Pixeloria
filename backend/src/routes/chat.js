@@ -8,7 +8,8 @@ import {
   updateAdminStatus,
   getAdminStatus,
   closeChat,
-  exportChatPDF
+  exportChatPDF,
+  adminReply
 } from '../controllers/chatController.js';
 
 const router = express.Router();
@@ -203,5 +204,37 @@ router.post('/admin/status', authenticateToken, requireAdmin, updateAdminStatus)
  *         description: Admin statuses retrieved successfully
  */
 router.get('/admin/status', authenticateToken, requireAdmin, getAdminStatus);
+
+/**
+ * @swagger
+ * /api/chat/admin/reply:
+ *   post:
+ *     summary: Send admin reply to chat
+ *     tags: [Chat Admin]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - session_id
+ *               - content
+ *               - sender
+ *             properties:
+ *               session_id:
+ *                 type: string
+ *               content:
+ *                 type: string
+ *               sender:
+ *                 type: string
+ *                 enum: [admin]
+ *     responses:
+ *       200:
+ *         description: Admin reply sent successfully
+ */
+router.post('/admin/reply', authenticateToken, requireAdmin, adminReply);
 
 export default router;

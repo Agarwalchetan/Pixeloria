@@ -18,6 +18,8 @@ import { logger } from './utils/logger.js';
 import { errorHandler } from './middleware/errorHandler.js';
 import { connectDB } from './database/connection.js';
 import { initializeDatabase } from './database/migrate.js';
+import { initializeWebSocket } from './utils/websocket.js';
+import { generalLimiter, chatLimiter, adminLimiter } from './middleware/rateLimiter.js';
 
 // Routes
 import authRoutes from './routes/auth.js';
@@ -74,12 +76,7 @@ const swaggerOptions = {
 
 const specs = swaggerJsdoc(swaggerOptions);
 
-// Rate limiter
-const limiter = rateLimit({
-  windowMs: Number(process.env.RATE_LIMIT_WINDOW_MS) || 15 * 60 * 1000, // 15 minutes
-  max: Number(process.env.RATE_LIMIT_MAX_REQUESTS) || 100,
-  message: 'Too many requests from this IP, please try again later.',
-});
+// Rate limiters are now imported from middleware/rateLimiter.js
 
 // Middleware
 app.use(helmet());
@@ -97,7 +94,7 @@ app.use(morgan('combined', {
 }));
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true }));
-app.use(limiter);
+app.use(generalLimiter);
 
 // Static file serving
 app.use('/uploads', express.static('uploads'));
@@ -116,16 +113,16 @@ app.get('/health', (req, res) => {
   });
 });
 
-// Main API routes
-app.use('/api/auth', authRoutes);
-app.use('/api/portfolio', portfolioRoutes);
-app.use('/api/blogs', blogRoutes);
-app.use('/api/contact', contactRoutes);
-app.use('/api/services', servicesRoutes);
-app.use('/api/labs', labsRoutes);
-app.use('/api/estimate', estimateRoutes);
-app.use('/api/admin', adminRoutes);
-app.use('/api/chat', chatRoutes);
+// Main API routes with specific rate limiters
+app.use('/api/auth', generalLimiter, authRoutes);
+app.use('/api/portfolio', generalLimiter, portfolioRoutes);
+app.use('/api/blogs', generalLimiter, blogRoutes);
+app.use('/api/contact', generalLimiter, contactRoutes);
+app.use('/api/services', generalLimiter, servicesRoutes);
+app.use('/api/labs', generalLimiter, labsRoutes);
+app.use('/api/estimate', generalLimiter, estimateRoutes);
+app.use('/api/admin', adminLimiter, adminRoutes);
+app.use('/api/chat', chatLimiter, chatRoutes);
 
 // 404 Not Found handler
 app.use('*', (req, res) => {
@@ -192,6 +189,10 @@ async function startServer() {
       // Write the actual port to a file for frontend to read
       fs.writeFileSync(path.join(__dirname, '../../port.json'), JSON.stringify({ port: availablePort }));
     });
+
+    // Initialize WebSocket server
+    const io = initializeWebSocket(server);
+    logger.info(`🔌 WebSocket server initialized for real-time chat`);
 
     server.on('error', (error) => {
       logger.error('❌ Server error:', error);

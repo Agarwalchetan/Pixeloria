@@ -5,6 +5,7 @@ import { logger } from '../utils/logger.js';
 import { sendEmail } from '../utils/email.js';
 import { generatePDF } from '../utils/pdfGenerator.js';
 import { getAIModelKey } from './aiConfigController.js';
+import { emitNewMessage, emitChatStatusUpdate } from '../utils/websocket.js';
 import axios from 'axios';
 
 // AI Model Configurations
@@ -135,33 +136,48 @@ export const sendMessage = async (req, res, next) => {
       });
     }
 
-    // Get AI model configuration from admin settings
-    const aiConfig = await getAIModelKey(ai_model);
-    if (!aiConfig) {
-      return res.status(400).json({
-        success: false,
-        message: `AI model ${ai_model} is not configured or enabled`
-      });
-    }
+    // Only validate AI configuration for AI chats
+    let modelToUse, aiConfig, modelConfig, actualModel, apiKey;
+    
+    if (chat.chat_type === 'ai') {
+      // Determine which AI model to use - from request or chat config
+      modelToUse = ai_model || chat.ai_config?.selected_model;
+      
+      if (!modelToUse) {
+        return res.status(400).json({
+          success: false,
+          message: 'No AI model specified'
+        });
+      }
 
-    const modelConfig = AI_MODELS[ai_model];
-    if (!modelConfig) {
-      return res.status(400).json({
-        success: false,
-        message: `Unsupported AI model: ${ai_model}`
-      });
-    }
+      // Get AI model configuration from admin settings
+      aiConfig = await getAIModelKey(modelToUse);
+      if (!aiConfig) {
+        return res.status(400).json({
+          success: false,
+          message: `AI model ${modelToUse} is not configured or enabled`
+        });
+      }
 
-    // Use custom model name if specified in admin config, otherwise use default
-    const actualModel = aiConfig.modelName || modelConfig.model;
-    const apiKey = aiConfig.apiKey;
+      modelConfig = AI_MODELS[modelToUse];
+      if (!modelConfig) {
+        return res.status(400).json({
+          success: false,
+          message: `Unsupported AI model: ${modelToUse}`
+        });
+      }
+
+      // Use custom model name if specified in admin config, otherwise use default
+      actualModel = aiConfig.modelName || modelConfig.model;
+      apiKey = aiConfig.apiKey;
+    }
 
     // Create message
     const message = {
       sender,
       content,
       timestamp: new Date(),
-      ai_model: sender === 'ai' ? ai_model : undefined,
+      ai_model: sender === 'ai' ? modelToUse : undefined,
       status: 'sent'
     };
 
@@ -170,21 +186,27 @@ export const sendMessage = async (req, res, next) => {
     chat.last_activity = new Date();
     await chat.save();
 
+    // Emit real-time message to all connected clients
+    emitNewMessage(chat.session_id, message);
+
     // Handle AI response
     if (sender === 'user' && chat.chat_type === 'ai') {
       try {
-        const aiResponse = await generateAIResponse(content, ai_model || chat.ai_config.selected_model);
+        const aiResponse = await generateAIResponse(content, modelToUse);
         
         const aiMessage = {
           sender: 'ai',
           content: aiResponse,
           timestamp: new Date(),
-          ai_model: ai_model || chat.ai_config.selected_model,
+          ai_model: modelToUse,
           status: 'sent'
         };
 
         chat.messages.push(aiMessage);
         await chat.save();
+
+        // Emit AI response in real-time
+        emitNewMessage(chat.session_id, aiMessage);
 
         return res.json({
           success: true,
@@ -200,7 +222,7 @@ export const sendMessage = async (req, res, next) => {
           sender: 'ai',
           content: 'I apologize, but I\'m having trouble processing your request right now. Please try again or contact our support team.',
           timestamp: new Date(),
-          ai_model: ai_model || chat.ai_config.selected_model,
+          ai_model: modelToUse,
           status: 'sent'
         };
 
@@ -636,11 +658,19 @@ export const getChatStats = async (req, res, next) => {
   }
 };
 
-// Export chat as PDF
-export const exportChatPDF = async (req, res, next) => {
+// Admin reply
+export const adminReply = async (req, res, next) => {
   try {
-    const { session_id } = req.params;
+    const { session_id, content, sender } = req.body;
 
+    if (!session_id || !content || sender !== 'admin') {
+      return res.status(400).json({
+        success: false,
+        message: 'Session ID, content, and sender (admin) are required'
+      });
+    }
+
+    // Find the chat session
     const chat = await Chat.findOne({ session_id });
     if (!chat) {
       return res.status(404).json({
@@ -649,15 +679,65 @@ export const exportChatPDF = async (req, res, next) => {
       });
     }
 
-    const pdfPath = await generateChatPDF(chat);
-    
+    // Add admin message to chat
+    const adminMessage = {
+      sender: 'admin',
+      content: content.trim(),
+      timestamp: new Date(),
+      status: 'delivered'
+    };
+
+    chat.messages.push(adminMessage);
+    chat.last_activity = new Date();
+    chat.status = 'active';
+
+    await chat.save();
+
+    // Emit real-time message if WebSocket is available
+    try {
+      emitNewMessage(session_id, adminMessage);
+    } catch (wsError) {
+      logger.warn('WebSocket emission failed:', wsError.message);
+    }
+
+    logger.info(`Admin replied to chat ${session_id}`);
+
     res.json({
       success: true,
+      message: 'Admin reply sent successfully',
       data: {
-        pdfUrl: `/uploads/pdfs/${path.basename(pdfPath)}`
+        message: adminMessage,
+        chat_status: chat.status
       }
     });
+
   } catch (error) {
+    logger.error('Admin reply error:', error);
+    next(error);
+  }
+};
+
+// Export chat as PDF
+export const exportChatPDF = async (req, res, next) => {
+  try {
+    const { sessionId } = req.params;
+    
+    const chat = await Chat.findOne({ session_id: sessionId });
+    if (!chat) {
+      return res.status(404).json({
+        success: false,
+        message: 'Chat not found'
+      });
+    }
+
+    const pdfBuffer = await generatePDF(chat);
+    
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', `attachment; filename="chat-${sessionId}.pdf"`);
+    res.send(pdfBuffer);
+
+  } catch (error) {
+    logger.error('Export chat PDF error:', error);
     next(error);
   }
 };
