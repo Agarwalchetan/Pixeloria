@@ -1,4 +1,5 @@
 import Cookies from "js-cookie";
+import { getApiBaseUrl } from './api';
 
 export const AUTH_TOKEN_KEY = "adminToken";
 export const AUTH_USER_KEY = "adminUser";
@@ -100,7 +101,8 @@ export const authUtils = {
       const token = this.getToken();
       if (!token) return false;
 
-      const response = await fetch("http://localhost:5000/api/auth/me", {
+      const apiBaseUrl = await getApiBaseUrl();
+      const response = await fetch(`${apiBaseUrl}/auth/verify-token`, {
         headers: {
           Authorization: `Bearer ${token}`,
         },

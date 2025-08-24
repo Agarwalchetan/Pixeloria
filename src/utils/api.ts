@@ -1,4 +1,51 @@
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:50001/api';
+// Function to detect backend port dynamically
+async function detectBackendPort(): Promise<number> {
+  // Try to read port from backend-generated file
+  try {
+    const response = await fetch('/port.json');
+    if (response.ok) {
+      const data = await response.json();
+      return data.port;
+    }
+  } catch (error) {
+    // File doesn't exist or can't be read, fallback to port detection
+  }
+
+  // Try common ports in order
+  const portsToTry = [5000, 5001, 5002, 5003];
+  
+  for (const port of portsToTry) {
+    try {
+      const response = await fetch(`http://localhost:${port}/health`, { 
+        method: 'GET',
+        signal: AbortSignal.timeout(2000) // 2 second timeout
+      });
+      if (response.ok) {
+        return port;
+      }
+    } catch (error) {
+      // Port not available, try next
+      continue;
+    }
+  }
+  
+  // Default fallback
+  return 5000;
+}
+
+// Cache the detected port
+let cachedPort: number | null = null;
+
+// Get API base URL with dynamic port detection
+export async function getApiBaseUrl(): Promise<string> {
+  if (cachedPort === null) {
+    cachedPort = await detectBackendPort();
+  }
+  return `http://localhost:${cachedPort}/api`;
+}
+
+// Legacy export for backward compatibility
+export const API_BASE_URL = 'http://localhost:5000/api';
 
 export interface ApiResponse<T> {
   success: boolean;
@@ -8,7 +55,7 @@ export interface ApiResponse<T> {
 }
 
 // Helper function to get auth headers
-const getAuthHeaders = () => {
+const getAuthHeaders = (): HeadersInit => {
   const token = localStorage.getItem('adminToken') || sessionStorage.getItem('adminToken');
   return token ? { 'Authorization': `Bearer ${token}` } : {};
 };
