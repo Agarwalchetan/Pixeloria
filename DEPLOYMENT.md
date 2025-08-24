@@ -5,8 +5,8 @@ Complete deployment instructions for the Pixeloria digital solutions platform.
 ## 🚀 Deployment Overview
 
 Pixeloria consists of two main components:
-- **Frontend**: React/TypeScript application (Vite)
-- **Backend**: Node.js/Express API with MongoDB
+- **Frontend**: React/TypeScript application (Vite) with real-time chat widget
+- **Backend**: Node.js/Express API with MongoDB, real-time chat system, and AI integrations
 
 ## 📋 Prerequisites
 

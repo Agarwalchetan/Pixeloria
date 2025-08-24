@@ -5,6 +5,8 @@ Node.js/Express backend server providing REST API endpoints for the Pixeloria di
 ## 🚀 Features
 
 - **Authentication & Authorization**: JWT-based auth with role-based access control
+- **Real-Time Chat System**: Admin-user messaging with polling synchronization
+- **AI Configuration Management**: Secure API key storage for multiple AI models
 - **Calculator Management**: Dynamic cost estimation with submission tracking
 - **Admin Dashboard**: Complete administrative interface with analytics
 - **User Management**: User roles and permissions system
@@ -99,6 +101,20 @@ Once the server is running, visit `http://localhost:5000/api-docs` for interacti
 - `POST /api/auth/login` - Admin login
 - `GET /api/auth/me` - Get current user info
 - `POST /api/auth/logout` - Logout user
+
+### Chat System
+- `POST /api/chat/initialize` - Initialize new chat session
+- `POST /api/chat/message` - Send message in chat
+- `GET /api/chat/:sessionId/history` - Get chat history
+- `POST /api/chat/admin/reply` - Admin reply to user message
+- `GET /api/admin/dashboard/chats` - Get all admin chats
+- `PATCH /api/admin/dashboard/chats/:sessionId/status` - Update chat status
+
+### AI Configuration (Admin)
+- `GET /api/admin/dashboard/ai-config` - Get AI configuration
+- `POST /api/admin/dashboard/ai-config` - Update AI configuration
+- `POST /api/admin/dashboard/ai-config/test` - Test AI model connection
+- `GET /api/admin/dashboard/ai-config/enabled` - Get enabled AI models
 
 ### Calculator
 - `POST /api/calculator/submit` - Submit calculator form
