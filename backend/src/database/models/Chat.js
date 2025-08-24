@@ -23,7 +23,6 @@ const messageSchema = new mongoose.Schema({
   },
   message_id: {
     type: String,
-    unique: true,
     default: () => new mongoose.Types.ObjectId().toString()
   },
   status: {
