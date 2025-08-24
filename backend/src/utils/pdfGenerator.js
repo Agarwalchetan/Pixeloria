@@ -182,3 +182,169 @@ export const generatePDF = async (submission) => {
     throw error;
   }
 };
+
+// Generate chat PDF
+export const generateChatPDF = async (chat) => {
+  try {
+    // Ensure PDF directory exists
+    const pdfDir = path.join('uploads/pdfs');
+    if (!fs.existsSync(pdfDir)) {
+      fs.mkdirSync(pdfDir, { recursive: true });
+    }
+
+    const htmlContent = `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="UTF-8">
+        <title>Chat History - ${chat.user_info.name}</title>
+        <style>
+          body {
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+          }
+          .header {
+            text-align: center;
+            border-bottom: 3px solid #3B82F6;
+            padding-bottom: 20px;
+            margin-bottom: 30px;
+          }
+          .logo {
+            font-size: 28px;
+            font-weight: bold;
+            color: #3B82F6;
+            margin-bottom: 10px;
+          }
+          .message {
+            margin: 15px 0;
+            padding: 15px;
+            border-radius: 12px;
+            border-left: 4px solid;
+          }
+          .user-message {
+            background: #EBF8FF;
+            border-left-color: #3B82F6;
+            margin-left: 20%;
+          }
+          .admin-message {
+            background: #F0FDF4;
+            border-left-color: #10B981;
+            margin-right: 20%;
+          }
+          .ai-message {
+            background: #FEF3C7;
+            border-left-color: #F59E0B;
+            margin-right: 20%;
+          }
+          .timestamp {
+            font-size: 12px;
+            color: #6B7280;
+            margin-top: 8px;
+          }
+          .user-info {
+            background: #F8FAFC;
+            padding: 20px;
+            border-radius: 12px;
+            margin-bottom: 30px;
+          }
+          .chat-stats {
+            background: #F1F5F9;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+          }
+        </style>
+      </head>
+      <body>
+        <div class="header">
+          <div class="logo">Pixeloria</div>
+          <h1>Chat History Export</h1>
+          <p>Professional Support Conversation</p>
+        </div>
+
+        <div class="user-info">
+          <h3>User Information</h3>
+          <p><strong>Name:</strong> ${chat.user_info.name}</p>
+          <p><strong>Email:</strong> ${chat.user_info.email}</p>
+          <p><strong>Country:</strong> ${chat.user_info.country}</p>
+          <p><strong>Chat Type:</strong> ${chat.chat_type.toUpperCase()}</p>
+          <p><strong>Session ID:</strong> ${chat.session_id}</p>
+        </div>
+
+        <div class="chat-stats">
+          <h3>Chat Statistics</h3>
+          <p><strong>Total Messages:</strong> ${chat.messages.length}</p>
+          <p><strong>Started:</strong> ${new Date(chat.created_at).toLocaleString()}</p>
+          <p><strong>Last Activity:</strong> ${new Date(chat.last_activity).toLocaleString()}</p>
+          <p><strong>Status:</strong> ${chat.status.toUpperCase()}</p>
+          ${chat.ai_config?.selected_model ? `<p><strong>AI Model:</strong> ${chat.ai_config.selected_model.toUpperCase()}</p>` : ''}
+        </div>
+
+        <div class="messages">
+          <h3>Conversation History</h3>
+          ${chat.messages.map(msg => `
+            <div class="message ${msg.sender}-message">
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                <strong style="color: ${
+                  msg.sender === 'user' ? '#1E40AF' : 
+                  msg.sender === 'ai' ? '#7C3AED' : '#059669'
+                };">
+                  ${msg.sender.toUpperCase()}${msg.ai_model ? ` (${msg.ai_model.toUpperCase()})` : ''}
+                </strong>
+                <span style="font-size: 11px; color: #6B7280;">
+                  ${new Date(msg.timestamp).toLocaleString()}
+                </span>
+              </div>
+              <p style="margin: 0; line-height: 1.5;">${msg.content}</p>
+            </div>
+          `).join('')}
+        </div>
+
+        <div style="margin-top: 40px; text-align: center; color: #6B7280; font-size: 14px; border-top: 1px solid #E5E7EB; padding-top: 20px;">
+          <p><strong>Pixeloria Support Team</strong></p>
+          <p>Email: hello@pixeloria.com | Phone: (415) 555-0123</p>
+          <p style="margin-top: 15px; font-size: 12px;">
+            This chat history was exported on ${new Date().toLocaleString()}
+          </p>
+        </div>
+      </body>
+      </html>
+    `;
+
+    const fileName = `chat_${chat.session_id}_${Date.now()}.pdf`;
+    const filePath = path.join(pdfDir, fileName);
+    
+    const browser = await puppeteer.launch({
+      headless: true,
+      args: ['--no-sandbox', '--disable-setuid-sandbox']
+    });
+    
+    const page = await browser.newPage();
+    await page.setContent(htmlContent, { waitUntil: 'networkidle0' });
+    
+    await page.pdf({
+      path: filePath,
+      format: 'A4',
+      printBackground: true,
+      margin: {
+        top: '20px',
+        right: '20px',
+        bottom: '20px',
+        left: '20px'
+      }
+    });
+    
+    await browser.close();
+    
+    logger.info('Chat PDF generated successfully:', fileName);
+    return filePath;
+
+  } catch (error) {
+    logger.error('Chat PDF generation failed:', error);
+    throw error;
+  }
+};
