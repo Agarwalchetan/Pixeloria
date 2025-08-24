@@ -1,11 +1,21 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import {
-  MessageCircle, Users, Bot, User, Clock, Mail, Globe,
-  Search, Filter, Download, Eye, X, Send, Settings,
-  Circle, CheckCircle, AlertCircle, Zap, Brain, Sparkles,
-  Phone, MapPin, Calendar, Star, TrendingUp, BarChart3
+import { 
+  MessageCircle, 
+  Search, 
+  Eye, 
+  Download, 
+  X, 
+  Send, 
+  Clock,
+  User,
+  Bot,
+  TrendingUp,
+  Globe,
+  Ban,
+  Mail
 } from 'lucide-react';
+import { getApiBaseUrl } from '../../utils/api';
 import { authUtils } from '../../utils/auth';
 
 interface Chat {
@@ -75,17 +85,25 @@ const Chats: React.FC = () => {
   }, []);
 
   const fetchChats = async () => {
+    setIsLoading(true);
     try {
       const token = localStorage.getItem('adminToken') || sessionStorage.getItem('adminToken');
-      const response = await fetch('http://localhost:50001/api/chat/admin/chats', {
+      console.log('Fetching chats with filters:', { statusFilter, typeFilter, searchTerm });
+      
+      const apiBaseUrl = await getApiBaseUrl();
+      const response = await fetch(`${apiBaseUrl}/admin/dashboard/chats?status=${statusFilter}&chat_type=${typeFilter}&search=${searchTerm}`, {
         headers: {
           'Authorization': `Bearer ${token}`
         }
       });
 
       const data = await response.json();
+      console.log('API Response:', data);
       if (data.success) {
         setChats(data.data.chats);
+        console.log('Chats loaded:', data.data.chats.length);
+      } else {
+        console.error('API Error:', data.message);
       }
     } catch (error) {
       console.error('Error fetching chats:', error);
@@ -97,7 +115,7 @@ const Chats: React.FC = () => {
   const fetchAdminStatuses = async () => {
     try {
       const token = localStorage.getItem('adminToken') || sessionStorage.getItem('adminToken');
-      const response = await fetch('http://localhost:50001/api/chat/admin/status', {
+      const response = await fetch('http://localhost:5000/api/chat/admin/status', {
         headers: {
           'Authorization': `Bearer ${token}`
         }
@@ -124,7 +142,7 @@ const Chats: React.FC = () => {
   const updateOnlineStatus = async (online: boolean) => {
     try {
       const token = localStorage.getItem('adminToken') || sessionStorage.getItem('adminToken');
-      const response = await fetch('http://localhost:50001/api/chat/admin/status', {
+      const response = await fetch('http://localhost:5000/api/chat/admin/status', {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -151,7 +169,7 @@ const Chats: React.FC = () => {
 
     try {
       const token = localStorage.getItem('adminToken') || sessionStorage.getItem('adminToken');
-      const response = await fetch('http://localhost:50001/api/chat/message', {
+      const response = await fetch('http://localhost:5000/api/chat/message', {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -179,10 +197,31 @@ const Chats: React.FC = () => {
     }
   };
 
+  const terminateChat = async (sessionId: string, reason: string = 'Terminated by admin') => {
+    try {
+      const token = localStorage.getItem('adminToken') || sessionStorage.getItem('adminToken');
+      const response = await fetch(`http://localhost:5000/api/admin/dashboard/chats/${sessionId}/terminate`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ reason })
+      });
+
+      if (response.ok) {
+        fetchChats(); // Refresh the chat list
+        setShowChatModal(false);
+      }
+    } catch (error) {
+      console.error('Error terminating chat:', error);
+    }
+  };
+
   const exportChatPDF = async (sessionId: string) => {
     try {
       const token = localStorage.getItem('adminToken') || sessionStorage.getItem('adminToken');
-      const response = await fetch(`http://localhost:50001/api/chat/${sessionId}/export`, {
+      const response = await fetch(`http://localhost:5000/api/admin/dashboard/chats/${sessionId}/export`, {
         headers: {
           'Authorization': `Bearer ${token}`
         }
@@ -191,7 +230,7 @@ const Chats: React.FC = () => {
       if (response.ok) {
         const data = await response.json();
         if (data.success) {
-          window.open(`http://localhost:50001${data.data.pdfUrl}`, '_blank');
+          window.open(`http://localhost:5000${data.data.pdfUrl}`, '_blank');
         }
       }
     } catch (error) {
@@ -486,6 +525,20 @@ const Chats: React.FC = () => {
                       >
                         <Download size={16} />
                       </button>
+                      {chat.status === 'active' && (
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            if (confirm('Are you sure you want to terminate this chat?')) {
+                              terminateChat(chat.session_id);
+                            }
+                          }}
+                          className="p-2 text-gray-400 hover:text-red-600 transition-colors"
+                          title="Terminate Chat"
+                        >
+                          <Ban size={16} />
+                        </button>
+                      )}
                       <a
                         href={`mailto:${chat.user_info.email}`}
                         onClick={(e) => e.stopPropagation()}

@@ -96,6 +96,14 @@ import {
   deleteAIModel
 } from '../controllers/aiConfigController.js';
 
+import {
+  getAllChats,
+  getChatHistory,
+  terminateChat,
+  getChatStats,
+  exportChatPDF
+} from '../controllers/chatController.js';
+
 const router = express.Router();
 
 // Public endpoint for chat widget (before auth middleware)
@@ -276,6 +284,13 @@ router.delete('/dashboard/ai-config/:id', requireEditor, deleteAIModel);
 router.get('/dashboard/users', requireEditor, getUsers); // Editors and admins can view users
 router.put('/dashboard/users/:id', requireEditor, updateUser);
 router.delete('/dashboard/users/:id', requireEditor, deleteUser);
+
+// Chat management routes
+router.get('/dashboard/chats', getAllChats);
+router.get('/dashboard/chats/:session_id', getChatHistory);
+router.post('/dashboard/chats/:session_id/terminate', requireEditor, terminateChat);
+router.get('/dashboard/chats/stats', getChatStats);
+router.get('/dashboard/chats/:session_id/export', exportChatPDF);
 
 // Bulk operations
 router.post('/dashboard/bulk-delete', requireEditor, bulkDelete);

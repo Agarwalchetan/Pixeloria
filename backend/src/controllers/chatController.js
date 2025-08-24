@@ -338,7 +338,75 @@ export const getChatHistory = async (req, res, next) => {
   }
 };
 
-// Admin chat management
+// Admin chat management - Get all chats (both AI and admin)
+export const getAllChats = async (req, res, next) => {
+  try {
+    const { 
+      status = 'all', 
+      chat_type = 'all', 
+      limit = 50, 
+      page = 1,
+      search = ''
+    } = req.query;
+
+    const filter = {};
+    
+    // Filter by status
+    if (status !== 'all') {
+      filter.status = status;
+    }
+    
+    // Filter by chat type
+    if (chat_type !== 'all') {
+      filter.chat_type = chat_type;
+    }
+
+    // Search filter
+    if (search) {
+      filter.$or = [
+        { 'user_info.name': { $regex: search, $options: 'i' } },
+        { 'user_info.email': { $regex: search, $options: 'i' } },
+        { session_id: { $regex: search, $options: 'i' } }
+      ];
+    }
+
+    const skip = (parseInt(page) - 1) * parseInt(limit);
+    
+    const chats = await Chat.find(filter)
+      .sort({ last_activity: -1 })
+      .skip(skip)
+      .limit(parseInt(limit))
+      .populate('admin_id', 'name email')
+      .select('session_id user_info chat_type status created_at last_activity messages admin_id ai_config');
+
+    const total = await Chat.countDocuments(filter);
+
+    // Add message count and last message preview
+    const chatsWithStats = chats.map(chat => ({
+      ...chat.toObject(),
+      message_count: chat.messages.length,
+      last_message: chat.messages.length > 0 ? {
+        content: chat.messages[chat.messages.length - 1].content.substring(0, 100) + '...',
+        sender: chat.messages[chat.messages.length - 1].sender,
+        timestamp: chat.messages[chat.messages.length - 1].timestamp
+      } : null
+    }));
+
+    res.json({
+      success: true,
+      data: {
+        chats: chatsWithStats,
+        total,
+        page: parseInt(page),
+        pages: Math.ceil(total / parseInt(limit))
+      }
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// Admin chat management - Legacy endpoint for admin chats only
 export const getAdminChats = async (req, res, next) => {
   try {
     const { status = 'active', limit = 50 } = req.query;
@@ -432,6 +500,136 @@ export const closeChat = async (req, res, next) => {
       success: true,
       message: 'Chat closed successfully',
       data: { chat }
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// Admin terminate chat (force close)
+export const terminateChat = async (req, res, next) => {
+  try {
+    const { session_id } = req.params;
+    const { reason = 'Terminated by admin' } = req.body;
+
+    const chat = await Chat.findOneAndUpdate(
+      { session_id },
+      { 
+        status: 'terminated',
+        termination_reason: reason,
+        terminated_by: req.user._id,
+        terminated_at: new Date()
+      },
+      { new: true }
+    );
+
+    if (!chat) {
+      return res.status(404).json({
+        success: false,
+        message: 'Chat session not found'
+      });
+    }
+
+    // Add system message about termination
+    const systemMessage = {
+      sender: 'system',
+      content: `Chat terminated by admin. Reason: ${reason}`,
+      timestamp: new Date(),
+      status: 'sent'
+    };
+
+    chat.messages.push(systemMessage);
+    await chat.save();
+
+    res.json({
+      success: true,
+      message: 'Chat terminated successfully',
+      data: { chat }
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// Get chat statistics
+export const getChatStats = async (req, res, next) => {
+  try {
+    const { period = '7d' } = req.query;
+    
+    // Calculate date range
+    const now = new Date();
+    let startDate;
+    
+    switch (period) {
+      case '24h':
+        startDate = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+        break;
+      case '7d':
+        startDate = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+        break;
+      case '30d':
+        startDate = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+        break;
+      default:
+        startDate = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+    }
+
+    const stats = await Chat.aggregate([
+      {
+        $match: {
+          created_at: { $gte: startDate }
+        }
+      },
+      {
+        $group: {
+          _id: null,
+          total_chats: { $sum: 1 },
+          ai_chats: {
+            $sum: { $cond: [{ $eq: ['$chat_type', 'ai'] }, 1, 0] }
+          },
+          admin_chats: {
+            $sum: { $cond: [{ $eq: ['$chat_type', 'admin'] }, 1, 0] }
+          },
+          active_chats: {
+            $sum: { $cond: [{ $eq: ['$status', 'active'] }, 1, 0] }
+          },
+          closed_chats: {
+            $sum: { $cond: [{ $eq: ['$status', 'closed'] }, 1, 0] }
+          },
+          terminated_chats: {
+            $sum: { $cond: [{ $eq: ['$status', 'terminated'] }, 1, 0] }
+          },
+          total_messages: { $sum: { $size: '$messages' } }
+        }
+      }
+    ]);
+
+    const result = stats[0] || {
+      total_chats: 0,
+      ai_chats: 0,
+      admin_chats: 0,
+      active_chats: 0,
+      closed_chats: 0,
+      terminated_chats: 0,
+      total_messages: 0
+    };
+
+    // Get live stats
+    const liveStats = {
+      currently_active: await Chat.countDocuments({ status: 'active' }),
+      waiting_for_admin: await Chat.countDocuments({ 
+        chat_type: 'admin', 
+        status: 'waiting' 
+      })
+    };
+
+    res.json({
+      success: true,
+      data: {
+        period,
+        stats: result,
+        live: liveStats
+      }
     });
   } catch (error) {
     next(error);

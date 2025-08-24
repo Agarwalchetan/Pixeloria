@@ -60,8 +60,18 @@ const chatSchema = new mongoose.Schema({
   },
   status: {
     type: String,
-    enum: ['active', 'closed', 'waiting'],
+    enum: ['active', 'closed', 'waiting', 'terminated'],
     default: 'active'
+  },
+  termination_reason: {
+    type: String
+  },
+  terminated_by: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User'
+  },
+  terminated_at: {
+    type: Date
   },
   messages: [messageSchema],
   admin_id: {
