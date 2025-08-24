@@ -375,6 +375,21 @@ const createSampleData = async () => {
       logger.info('Default about settings created');
     }
 
+    // Create admin status for existing admin users
+    const adminUsers = await User.find({ role: 'admin' });
+    for (const admin of adminUsers) {
+      const existingStatus = await AdminStatus.findOne({ admin_id: admin._id });
+      if (!existingStatus) {
+        const adminStatus = new AdminStatus({
+          admin_id: admin._id,
+          is_online: false,
+          status_message: 'Available for chat'
+        });
+        await adminStatus.save();
+        logger.info(`Admin status created for ${admin.name}`);
+      }
+    }
+
     // Create default calculator configuration if none exist
     const projectTypeCount = await ProjectType.countDocuments();
     if (projectTypeCount === 0) {

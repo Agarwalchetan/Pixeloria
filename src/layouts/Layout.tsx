@@ -59,7 +59,7 @@ const Layout: React.FC = () => {
 
       {/* Chat AI Widget */}
       <Suspense fallback={null}>
-        <ChatWidget mode="ai" position="bottom-right" />
+        <ChatWidget mode="both" position="bottom-right" />
       </Suspense>
     </div>
   );
