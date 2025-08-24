@@ -87,9 +87,21 @@ import {
   updateTimelineOption,
   deleteTimelineOption
 } from '../controllers/calculatorController.js';
+
+import {
+  getAIConfig,
+  saveAIModel,
+  testAIModelKey,
+  getEnabledAIModels,
+  deleteAIModel
+} from '../controllers/aiConfigController.js';
+
 const router = express.Router();
 
-// Apply authentication middleware to all admin routes
+// Public endpoint for chat widget (before auth middleware)
+router.get('/dashboard/ai-config/enabled', getEnabledAIModels);
+
+// Apply authentication middleware to all other admin routes
 router.use(authenticateToken);
 router.use(requireAdmin);
 
@@ -253,6 +265,12 @@ router.get('/dashboard/calculator/timeline-options', requireEditor, async (req, 
 router.post('/dashboard/calculator/timeline-options', requireEditor, createTimelineOption);
 router.put('/dashboard/calculator/timeline-options/:id', requireEditor, updateTimelineOption);
 router.delete('/dashboard/calculator/timeline-options/:id', requireEditor, deleteTimelineOption);
+
+// AI Configuration routes
+router.get('/dashboard/ai-config', requireEditor, getAIConfig);
+router.post('/dashboard/ai-config', requireEditor, saveAIModel);
+router.post('/dashboard/ai-config/test', requireEditor, testAIModelKey);
+router.delete('/dashboard/ai-config/:id', requireEditor, deleteAIModel);
 
 // Users routes
 router.get('/dashboard/users', requireEditor, getUsers); // Editors and admins can view users

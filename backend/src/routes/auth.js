@@ -206,6 +206,39 @@ router.post('/login', validate(schemas.login), async (req, res, next) => {
 
 /**
  * @swagger
+ * /api/auth/verify-token:
+ *   get:
+ *     summary: Verify JWT token
+ *     tags: [Authentication]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Token is valid
+ *       401:
+ *         description: Invalid or expired token
+ */
+router.get('/verify-token', authenticateToken, async (req, res, next) => {
+  try {
+    res.json({
+      success: true,
+      message: 'Token is valid',
+      data: {
+        user: {
+          id: req.user._id,
+          name: req.user.name,
+          email: req.user.email,
+          role: req.user.role,
+        },
+      },
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
+/**
+ * @swagger
  * /api/auth/me:
  *   get:
  *     summary: Get current user profile
