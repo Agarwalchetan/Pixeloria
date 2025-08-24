@@ -4,6 +4,7 @@ import User from '../database/models/User.js';
 import { logger } from '../utils/logger.js';
 import { sendEmail } from '../utils/email.js';
 import { generatePDF } from '../utils/pdfGenerator.js';
+import { getAIModelKey } from './aiConfigController.js';
 import axios from 'axios';
 
 // AI Model Configurations
@@ -11,8 +12,8 @@ const AI_MODELS = {
   groq: {
     name: 'Groq',
     endpoint: 'https://api.groq.com/openai/v1/chat/completions',
-    model: 'mixtral-8x7b-32768',
-    description: 'Fast inference with Mixtral model'
+    model: 'openai/gpt-oss-20b',
+    description: 'Fast inference with GPT OSS 20B model'
   },
   openai: {
     name: 'OpenAI',
@@ -67,14 +68,24 @@ export const initializeChat = async (req, res, next) => {
     }
 
     // Create chat session
-    const chat = new Chat({
+    const chatData = {
       session_id,
       user_info,
-      chat_type: admin_available ? 'admin' : chat_type,
-      status: admin_available ? 'active' : 'waiting',
-      admin_id: assigned_admin,
-      ai_config: chat_type === 'ai' ? ai_config : undefined
-    });
+      chat_type,
+      status: chat_type === 'admin' ? (admin_available ? 'active' : 'waiting') : 'active'
+    };
+
+    // Only add admin_id if chat_type is admin AND we have an assigned admin
+    if (chat_type === 'admin' && assigned_admin) {
+      chatData.admin_id = assigned_admin;
+    }
+
+    // Only add ai_config if chat_type is ai
+    if (chat_type === 'ai') {
+      chatData.ai_config = ai_config;
+    }
+
+    const chat = new Chat(chatData);
 
     await chat.save();
 
@@ -124,6 +135,27 @@ export const sendMessage = async (req, res, next) => {
       });
     }
 
+    // Get AI model configuration from admin settings
+    const aiConfig = await getAIModelKey(ai_model);
+    if (!aiConfig) {
+      return res.status(400).json({
+        success: false,
+        message: `AI model ${ai_model} is not configured or enabled`
+      });
+    }
+
+    const modelConfig = AI_MODELS[ai_model];
+    if (!modelConfig) {
+      return res.status(400).json({
+        success: false,
+        message: `Unsupported AI model: ${ai_model}`
+      });
+    }
+
+    // Use custom model name if specified in admin config, otherwise use default
+    const actualModel = aiConfig.modelName || modelConfig.model;
+    const apiKey = aiConfig.apiKey;
+
     // Create message
     const message = {
       sender,
@@ -141,7 +173,7 @@ export const sendMessage = async (req, res, next) => {
     // Handle AI response
     if (sender === 'user' && chat.chat_type === 'ai') {
       try {
-        const aiResponse = await generateAIResponse(content, ai_model || chat.ai_config.selected_model, chat.ai_config.api_keys);
+        const aiResponse = await generateAIResponse(content, ai_model || chat.ai_config.selected_model);
         
         const aiMessage = {
           sender: 'ai',
@@ -201,16 +233,21 @@ export const sendMessage = async (req, res, next) => {
 };
 
 // Generate AI response
-const generateAIResponse = async (userMessage, model, apiKeys) => {
+const generateAIResponse = async (userMessage, model) => {
+  // Get AI model configuration from admin settings
+  const aiConfig = await getAIModelKey(model);
+  if (!aiConfig) {
+    throw new Error(`AI model ${model} is not configured or enabled`);
+  }
+
   const modelConfig = AI_MODELS[model];
   if (!modelConfig) {
     throw new Error('Invalid AI model selected');
   }
 
-  const apiKey = apiKeys[model];
-  if (!apiKey) {
-    throw new Error(`API key not provided for ${model}`);
-  }
+  // Use custom model name if specified in admin config, otherwise use default
+  const actualModel = aiConfig.modelName || modelConfig.model;
+  const apiKey = aiConfig.apiKey;
 
   try {
     let response;
@@ -234,23 +271,25 @@ const generateAIResponse = async (userMessage, model, apiKeys) => {
       return response.data.candidates[0].content.parts[0].text;
     } else {
       // OpenAI-compatible API (Groq, OpenAI, DeepSeek)
+      const requestBody = {
+        model: actualModel,
+        messages: [
+          {
+            role: 'system',
+            content: `You are a helpful AI assistant for Pixeloria, a creative platform. Be concise, helpful, and engaging. Format your responses with markdown when appropriate - use **bold** for emphasis, *italics* for subtle emphasis, \`code\` for technical terms, bullet points with - or *, numbered lists with 1. 2. etc., and code blocks with \`\`\` for longer code snippets. Use ## for section headers when organizing longer responses.`
+          },
+          {
+            role: 'user',
+            content: userMessage
+          }
+        ],
+        max_tokens: 1000,
+        temperature: 0.7
+      };
+
       response = await axios.post(
         modelConfig.endpoint,
-        {
-          model: modelConfig.model,
-          messages: [
-            {
-              role: 'system',
-              content: 'You are a helpful assistant for Pixeloria, a web development agency. Help users with their web development questions and guide them toward our services when appropriate.'
-            },
-            {
-              role: 'user',
-              content: userMessage
-            }
-          ],
-          max_tokens: 500,
-          temperature: 0.7
-        },
+        requestBody,
         {
           headers: {
             'Authorization': `Bearer ${apiKey}`,

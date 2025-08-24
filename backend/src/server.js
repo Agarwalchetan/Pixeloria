@@ -11,6 +11,7 @@ import swaggerJsdoc from 'swagger-jsdoc';
 import swaggerUi from 'swagger-ui-express';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import fs from 'fs';
 
 // Utils & Middleware
 import { logger } from './utils/logger.js';
@@ -50,7 +51,7 @@ if (!mongoUri) {
 }
 
 const app = express();
-const PORT = process.env.PORT || 3001;
+const BASE_PORT = process.env.PORT || 5000;
 
 // Swagger setup
 const swaggerOptions = {
@@ -63,7 +64,7 @@ const swaggerOptions = {
     },
     servers: [
       {
-        url: `http://localhost:${PORT}`,
+        url: `http://localhost:${BASE_PORT}`,
         description: 'Development server',
       },
     ],
@@ -137,43 +138,64 @@ app.use('*', (req, res) => {
 // Global error handler
 app.use(errorHandler);
 
+// Function to find available port
+function findAvailablePort(startPort, maxAttempts = 10) {
+  return new Promise((resolve, reject) => {
+    let currentPort = startPort;
+    let attempts = 0;
+
+    function tryPort() {
+      if (attempts >= maxAttempts) {
+        reject(new Error(`No available port found after ${maxAttempts} attempts starting from ${startPort}`));
+        return;
+      }
+
+      const testServer = app.listen(currentPort)
+        .on('listening', () => {
+          testServer.close(() => {
+            resolve(currentPort);
+          });
+        })
+        .on('error', (err) => {
+          if (err.code === 'EADDRINUSE') {
+            logger.warn(`⚠️ Port ${currentPort} is occupied, trying port ${currentPort + 1}`);
+            currentPort++;
+            attempts++;
+            tryPort();
+          } else {
+            reject(err);
+          }
+        });
+    }
+
+    tryPort();
+  });
+}
+
 // Bootstrapping the server
 async function startServer() {
   try {
     await connectDB();
     await initializeDatabase();
 
-    const server = app.listen(PORT, () => {
-      logger.info(`🚀 Server running on http://localhost:${PORT}`);
+    // Find available port starting from BASE_PORT
+    const availablePort = await findAvailablePort(BASE_PORT);
+    
+    if (availablePort !== BASE_PORT) {
+      logger.info(`🔄 Port ${BASE_PORT} was occupied, shifted to port ${availablePort}`);
+    }
+
+    const server = app.listen(availablePort, () => {
+      logger.info(`🚀 Server running on http://localhost:${availablePort}`);
       logger.info(`📘 API docs available at /api-docs`);
+      
+      // Write the actual port to a file for frontend to read
+      fs.writeFileSync(path.join(__dirname, '../../port.json'), JSON.stringify({ port: availablePort }));
     });
 
     server.on('error', (error) => {
-      if (error.code === 'EADDRINUSE') {
-        logger.error(`❌ Port ${PORT} is already in use. Trying alternative ports...`);
-        
-        // Try ports 5001, 5002, 5003, etc.
-        const tryPort = (port) => {
-          const altServer = app.listen(port, () => {
-            logger.info(`🚀 Server running on http://localhost:${port}`);
-            logger.info(`📘 API docs available at /api-docs`);
-          });
-          
-          altServer.on('error', (err) => {
-            if (err.code === 'EADDRINUSE' && port < 5010) {
-              tryPort(port + 1);
-            } else {
-              logger.error('❌ All ports in use or server error:', err);
-              process.exit(1);
-            }
-          });
-        };
-        
-        tryPort(PORT + 1);
-      } else {
-        logger.error('❌ Server error:', error);
-        process.exit(1);
-      }
+      logger.error('❌ Server error:', error);
+      process.exit(1);
     });
 
   } catch (error) {
