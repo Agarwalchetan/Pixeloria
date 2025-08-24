@@ -180,9 +180,9 @@ const Calculator: React.FC = () => {
       const token = localStorage.getItem('adminToken') || sessionStorage.getItem('adminToken');
       console.log('Token:', token ? 'Found' : 'Not found');
       console.log('Submission ID:', submissionId);
-      console.log('Making request to:', `http://localhost:50001/api/admin/dashboard/calculator/submissions/${submissionId}/view`);
+      console.log('Making request to:', `http://localhost:5000/api/admin/dashboard/calculator/submissions/${submissionId}/view`);
       
-      const response = await fetch(`http://localhost:50001/api/admin/dashboard/calculator/submissions/${submissionId}/view`, {
+      const response = await fetch(`http://localhost:5000/api/admin/dashboard/calculator/submissions/${submissionId}/view`, {
         headers: {
           'Authorization': `Bearer ${token}`
         }
