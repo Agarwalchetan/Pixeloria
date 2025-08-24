@@ -446,8 +446,14 @@ const Chats: React.FC = () => {
                   transition={{ delay: index * 0.05 }}
                   className="hover:bg-gray-50 cursor-pointer"
                   onClick={() => {
-                    setSelectedChat(chat);
-                    setShowChatModal(true);
+                    if (chat.chat_type === 'admin') {
+                      // Open live chats in new tab
+                      window.open(`/admin/live-chat/${chat.session_id}`, '_blank');
+                    } else {
+                      // Keep AI chats in modal
+                      setSelectedChat(chat);
+                      setShowChatModal(true);
+                    }
                   }}
                 >
                   <td className="px-6 py-4">
@@ -507,8 +513,12 @@ const Chats: React.FC = () => {
                       <button
                         onClick={(e) => {
                           e.stopPropagation();
-                          setSelectedChat(chat);
-                          setShowChatModal(true);
+                          if (chat.chat_type === 'admin') {
+                            window.open(`/admin/live-chat/${chat.session_id}`, '_blank');
+                          } else {
+                            setSelectedChat(chat);
+                            setShowChatModal(true);
+                          }
                         }}
                         className="p-2 text-gray-400 hover:text-blue-600 transition-colors"
                         title="View Chat"

@@ -31,6 +31,7 @@ import AdminUsers from './admin/Users';
 import AdminCalculator from './admin/Calculator';
 import AdminChats from './admin/Chats';
 import AdminAIConfig from './admin/AIConfiguration';
+import AdminLiveChat from './admin/LiveChat';
 
 // Content Management Components
 import AdminHomeContent from './admin/HomeContent';
@@ -90,6 +91,13 @@ function App() {
         <Route path="chats" element={<AdminChats />} />
         <Route path="ai-config" element={<AdminAIConfig />} />
       </Route>
+      
+      {/* Standalone Live Chat Route */}
+      <Route path="/admin/live-chat/:sessionId" element={
+        <ProtectedRoute requireAdmin={true}>
+          <AdminLiveChat />
+        </ProtectedRoute>
+      } />
       
       {/* Lab Tools Routes */}
       <Route path="/labs/color-generator" element={<ColorGenerator />} />

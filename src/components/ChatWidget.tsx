@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
 import { X, Send, Bot, User, MessageCircle, Maximize2, Minimize2, Loader, Settings, RefreshCw, AlertCircle } from 'lucide-react';
 import { Download } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { getApiBaseUrl } from '../utils/api';
 import MessageFormatter from './MessageFormatter';
 
@@ -58,6 +58,7 @@ const ChatWidget: React.FC<ChatWidgetProps> = ({
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const pollIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -66,6 +67,15 @@ const ChatWidget: React.FC<ChatWidgetProps> = ({
   useEffect(() => {
     scrollToBottom();
   }, [messages]);
+
+  // Cleanup polling on unmount
+  useEffect(() => {
+    return () => {
+      if (pollIntervalRef.current) {
+        clearInterval(pollIntervalRef.current);
+      }
+    };
+  }, []);
 
   // Fetch available AI models from admin configuration
   useEffect(() => {
@@ -116,15 +126,23 @@ const ChatWidget: React.FC<ChatWidgetProps> = ({
   };
 
   const initializeChat = async () => {
-    try {
-      setIsLoading(true);
-      setConnectionStatus('connecting');
+    console.log('initializeChat called:', { userInfo, chatType });
+    if (!userInfo || !chatType) {
+      console.log('Missing userInfo or chatType, skipping initialization');
+      return;
+    }
 
+    setIsLoading(true);
+    setConnectionStatus('connecting');
+    console.log('Starting chat initialization...');
+
+    try {
       const apiBaseUrl = await getApiBaseUrl();
+      console.log('API Base URL:', apiBaseUrl);
       const response = await fetch(`${apiBaseUrl}/chat/initialize`, {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json'
+          'Content-Type': 'application/json',
         },
         body: JSON.stringify({
           user_info: userInfo,
@@ -138,10 +156,13 @@ const ChatWidget: React.FC<ChatWidgetProps> = ({
       const data = await response.json();
       
       if (data.success) {
-        setSessionId(data.data.session_id);
+        const newSessionId = data.data.session_id;
+        setSessionId(newSessionId);
         setAdminAvailable(data.data.admin_available);
         setConnectionStatus('connected');
         setCurrentStep('chat');
+        
+        console.log('Chat initialized successfully:', { sessionId: newSessionId, chatType });
         
         // Add welcome message
         const welcomeMessage: Message = {
@@ -158,6 +179,13 @@ const ChatWidget: React.FC<ChatWidgetProps> = ({
         };
         
         setMessages([welcomeMessage]);
+        
+        // Start polling for admin chats to receive real-time messages
+        if (chatType === 'admin') {
+          console.log('Starting polling after successful initialization');
+          // Start polling with the sessionId directly
+          startPollingWithSessionId(newSessionId);
+        }
       } else {
         throw new Error(data.message || 'Failed to initialize chat');
       }
@@ -170,13 +198,63 @@ const ChatWidget: React.FC<ChatWidgetProps> = ({
     }
   };
 
-  const sendMessage = async () => {
-    if (!inputMessage.trim() || !sessionId) return;
+  const startPollingWithSessionId = (currentSessionId: string) => {
+    // Clear any existing polling
+    if (pollIntervalRef.current) {
+      clearInterval(pollIntervalRef.current);
+    }
+    
+    console.log('Starting polling for admin chat:', { sessionId: currentSessionId, chatType });
+    
+    // Poll for new messages every 2 seconds for admin chats
+    pollIntervalRef.current = setInterval(() => {
+      if (currentSessionId && chatType === 'admin') {
+        console.log('Polling triggered:', { sessionId: currentSessionId, chatType });
+        fetchChatHistoryForSession(currentSessionId);
+      } else {
+        console.log('Polling skipped:', { sessionId: currentSessionId, chatType });
+      }
+    }, 2000);
+  };
 
+  const fetchChatHistoryForSession = async (currentSessionId: string) => {
+    if (!currentSessionId) return;
+    
+    try {
+      const apiBaseUrl = await getApiBaseUrl();
+      const response = await fetch(`${apiBaseUrl}/chat/${currentSessionId}/history`);
+      const data = await response.json();
+      
+      console.log('Polling chat history:', { sessionId: currentSessionId, success: data.success, messageCount: data.data?.chat?.messages?.length });
+      
+      if (data.success && data.data.chat) {
+        const chatMessages = data.data.chat.messages.map((msg: any, index: number) => ({
+          id: `${msg.timestamp}_${index}_${msg.sender}`,
+          sender: msg.sender,
+          content: msg.content,
+          timestamp: new Date(msg.timestamp),
+          ai_model: msg.ai_model,
+          status: msg.status || 'delivered'
+        }));
+        
+        console.log('Updating messages:', chatMessages.length, 'messages');
+        // Always update with latest messages from server
+        setMessages(chatMessages);
+      }
+    } catch (error) {
+      console.error('Error fetching chat history:', error);
+      // Don't show error for polling failures to avoid spam
+    }
+  };
+
+  const sendMessage = async () => {
+    if (!inputMessage.trim() || !sessionId || isLoading) return;
+
+    const messageContent = inputMessage.trim();
     const userMessage: Message = {
       id: Date.now().toString(),
       sender: 'user',
-      content: inputMessage,
+      content: messageContent,
       timestamp: new Date(),
       status: 'sent'
     };
@@ -186,6 +264,10 @@ const ChatWidget: React.FC<ChatWidgetProps> = ({
     setIsLoading(true);
 
     try {
+      // For now, we'll use HTTP for all message sending
+      // WebSocket integration will be added back once properly configured
+
+      // Also send via HTTP for persistence and AI responses
       const apiBaseUrl = await getApiBaseUrl();
       const response = await fetch(`${apiBaseUrl}/chat/message`, {
         method: 'POST',
@@ -194,7 +276,7 @@ const ChatWidget: React.FC<ChatWidgetProps> = ({
         },
         body: JSON.stringify({
           session_id: sessionId,
-          content: inputMessage,
+          content: messageContent,
           sender: 'user',
           ai_model: chatType === 'ai' ? selectedAIModel : undefined
         })
@@ -204,6 +286,7 @@ const ChatWidget: React.FC<ChatWidgetProps> = ({
       
       if (data.success) {
         if (data.data.ai_response) {
+          // AI response - add directly to messages
           setMessages(prev => [...prev, {
             id: Date.now().toString() + '_ai',
             sender: 'ai',
@@ -213,6 +296,7 @@ const ChatWidget: React.FC<ChatWidgetProps> = ({
             status: 'delivered'
           }]);
         }
+        // For admin chats, real-time updates will be handled by WebSocket
       } else {
         throw new Error(data.message || 'Failed to send message');
       }
@@ -235,6 +319,12 @@ const ChatWidget: React.FC<ChatWidgetProps> = ({
       e.preventDefault();
       sendMessage();
     }
+  };
+
+  const handleStartChat = () => {
+    console.log('handleStartChat triggered:', { currentStep, chatType, userInfo });
+    setCurrentStep('chat');
+    initializeChat();
   };
 
   const resetChat = () => {
