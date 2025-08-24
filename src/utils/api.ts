@@ -619,3 +619,63 @@ export const calculatorApi = {
   updateTimelineOption: (id: string, data: any) => adminApi.updateTimelineOption(id, data),
   deleteTimelineOption: (id: string) => adminApi.deleteTimelineOption(id),
 };
+
+// Chat API functions
+export const chatApi = {
+  initialize: (userInfo: any, chatType: 'ai' | 'admin', aiConfig?: any) =>
+    fetchApi<{
+      session_id: string;
+      chat_type: string;
+      admin_available: boolean;
+      ai_models: any[];
+    }>('/chat/initialize', {
+      method: 'POST',
+      body: JSON.stringify({
+        user_info: userInfo,
+        chat_type: chatType,
+        ai_config: aiConfig
+      }),
+    }),
+
+  sendMessage: (sessionId: string, content: string, sender: string, aiModel?: string) =>
+    fetchApi<{
+      message: any;
+      ai_response?: any;
+    }>('/chat/message', {
+      method: 'POST',
+      body: JSON.stringify({
+        session_id: sessionId,
+        content,
+        sender,
+        ai_model: aiModel
+      }),
+    }),
+
+  getChatHistory: (sessionId: string) =>
+    fetchApi<{ chat: any }>(`/chat/${sessionId}/history`),
+
+  getAdminChats: (status?: string) => {
+    const params = status ? `?status=${status}` : '';
+    return fetchApi<{ chats: any[]; total: number }>(`/chat/admin/chats${params}`);
+  },
+
+  updateAdminStatus: (isOnline: boolean, statusMessage?: string) =>
+    fetchApi<{ adminStatus: any }>('/chat/admin/status', {
+      method: 'POST',
+      body: JSON.stringify({
+        is_online: isOnline,
+        status_message: statusMessage
+      }),
+    }),
+
+  getAdminStatus: () =>
+    fetchApi<{ adminStatuses: any[] }>('/chat/admin/status'),
+
+  closeChat: (sessionId: string) =>
+    fetchApi<{ chat: any }>(`/chat/${sessionId}/close`, {
+      method: 'PATCH',
+    }),
+
+  exportChatPDF: (sessionId: string) =>
+    fetchApi<{ pdfUrl: string }>(`/chat/${sessionId}/export`),
+};

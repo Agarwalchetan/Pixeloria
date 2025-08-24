@@ -27,6 +27,7 @@ import servicesRoutes from './routes/services.js';
 import labsRoutes from './routes/labs.js';
 import estimateRoutes from './routes/estimate.js';
 import adminRoutes from './routes/admin.js';
+import chatRoutes from './routes/chat.js';
 
 // Get __dirname for ES modules
 const __filename = fileURLToPath(import.meta.url);
@@ -123,6 +124,7 @@ app.use('/api/services', servicesRoutes);
 app.use('/api/labs', labsRoutes);
 app.use('/api/estimate', estimateRoutes);
 app.use('/api/admin', adminRoutes);
+app.use('/api/chat', chatRoutes);
 
 // 404 Not Found handler
 app.use('*', (req, res) => {

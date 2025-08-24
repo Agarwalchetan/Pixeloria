@@ -23,6 +23,7 @@ import {
   ChevronDown,
   Home,
   Calculator,
+  MessageSquare,
 } from "lucide-react";
 import { authUtils } from "../utils/auth";
 
@@ -43,6 +44,7 @@ const getRoleAccess = (userRole: string) => {
       "home-content",
       "about-content",
       "calculator",
+      "chats",
       "settings",
     ],
     editor: [
@@ -56,6 +58,7 @@ const getRoleAccess = (userRole: string) => {
       "newsletter",
       "analytics",
       "calculator",
+      "chats",
     ],
     viewer: [
       "overview",
@@ -68,6 +71,7 @@ const getRoleAccess = (userRole: string) => {
       "newsletter",
       "analytics",
       "calculator",
+      "chats",
     ],
   };
 
@@ -173,6 +177,13 @@ const AdminLayout: React.FC = () => {
       icon: Calculator,
       path: "/admin/dashboard/calculator",
       description: "Manage cost calculator",
+    },
+    {
+      id: "chats",
+      label: "Chat Management",
+      icon: MessageSquare,
+      path: "/admin/dashboard/chats",
+      description: "Manage AI and live chats",
     },
     {
       id: "settings",

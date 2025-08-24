@@ -29,6 +29,7 @@ import AdminSettings from './admin/Settings';
 import AdminAnalytics from './admin/Analytics';
 import AdminUsers from './admin/Users';
 import AdminCalculator from './admin/Calculator';
+import AdminChats from './admin/Chats';
 
 // Content Management Components
 import AdminHomeContent from './admin/HomeContent';
@@ -85,6 +86,7 @@ function App() {
         <Route path="home-content" element={<AdminHomeContent />} />
         <Route path="about-content" element={<AdminAboutContent />} />
         <Route path="calculator" element={<AdminCalculator />} />
+        <Route path="chats" element={<AdminChats />} />
       </Route>
       
       {/* Lab Tools Routes */}
