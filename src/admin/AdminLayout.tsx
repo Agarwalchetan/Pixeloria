@@ -23,7 +23,7 @@ import {
   ChevronDown,
   Home,
   Calculator,
-  MessageSquare,
+  Bot,
 } from "lucide-react";
 import { authUtils } from "../utils/auth";
 
@@ -45,6 +45,7 @@ const getRoleAccess = (userRole: string) => {
       "about-content",
       "calculator",
       "chats",
+      "ai-config",
       "settings",
     ],
     editor: [
@@ -59,6 +60,7 @@ const getRoleAccess = (userRole: string) => {
       "analytics",
       "calculator",
       "chats",
+      "ai-config",
     ],
     viewer: [
       "overview",
@@ -72,6 +74,7 @@ const getRoleAccess = (userRole: string) => {
       "analytics",
       "calculator",
       "chats",
+      "ai-config",
     ],
   };
 
@@ -184,6 +187,13 @@ const AdminLayout: React.FC = () => {
       icon: MessageSquare,
       path: "/admin/dashboard/chats",
       description: "Manage AI and live chats",
+    },
+    {
+      id: "ai-config",
+      label: "AI Configuration",
+      icon: Bot,
+      path: "/admin/dashboard/ai-config",
+      description: "Configure AI models and API keys",
     },
     {
       id: "settings",

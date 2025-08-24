@@ -30,6 +30,7 @@ import AdminAnalytics from './admin/Analytics';
 import AdminUsers from './admin/Users';
 import AdminCalculator from './admin/Calculator';
 import AdminChats from './admin/Chats';
+import AdminAIConfig from './admin/AIConfiguration';
 
 // Content Management Components
 import AdminHomeContent from './admin/HomeContent';
@@ -87,6 +88,7 @@ function App() {
         <Route path="about-content" element={<AdminAboutContent />} />
         <Route path="calculator" element={<AdminCalculator />} />
         <Route path="chats" element={<AdminChats />} />
+        <Route path="ai-config" element={<AdminAIConfig />} />
       </Route>
       
       {/* Lab Tools Routes */}
