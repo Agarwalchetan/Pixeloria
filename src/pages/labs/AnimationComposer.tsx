@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Play, Pause, RotateCcw, Settings, ArrowLeft, Copy, 
-  Zap, MousePointer, Eye, Code, Download, Save,
+  MousePointer, Eye, Code, Download, Save,
   Layers, Grid, Monitor, Smartphone, Tablet, Clock,
   BarChart3, Cpu, Activity, AlertTriangle, CheckCircle,
   Share2, Users, Link2, FileText, Sliders, Target,
@@ -387,7 +387,7 @@ const AnimationComposer: React.FC = () => {
               </Link>
               <div className="w-px h-6 bg-gray-600"></div>
               <div className="flex items-center space-x-3">
-                <Zap className="w-6 h-6 text-blue-400" />
+                <ZapIcon className="w-6 h-6 text-blue-400" />
                 <h1 className="text-xl font-bold text-white">Animation Composer</h1>
                 <span className="px-2 py-1 bg-blue-600 text-white text-xs rounded-full">BETA</span>
               </div>

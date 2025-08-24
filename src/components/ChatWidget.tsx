@@ -1,11 +1,9 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import {
-  MessageCircle, X, Send, Bot, User, Settings, Download,
-  Minimize2, Maximize2, Phone, Mail, MapPin, Clock,
-  Zap, Brain, Sparkles, Globe, CheckCircle, AlertCircle,
-  Loader, Copy, RefreshCw
-} from 'lucide-react';
+import { X, Send, Bot, User, MessageCircle, Maximize2, Minimize2, Loader, Settings, RefreshCw, AlertCircle } from 'lucide-react';
+import { Download } from 'lucide-react';
+import { getApiBaseUrl } from '../utils/api';
+import MessageFormatter from './MessageFormatter';
 
 interface Message {
   id: string;
@@ -27,36 +25,14 @@ interface ChatWidgetProps {
   position?: 'bottom-right' | 'bottom-left';
 }
 
-const AI_MODELS = [
-  {
-    id: 'groq',
-    name: 'Groq',
-    description: 'Lightning-fast inference',
-    icon: '⚡',
-    color: 'from-orange-500 to-red-500'
-  },
-  {
-    id: 'openai',
-    name: 'OpenAI',
-    description: 'ChatGPT 3.5 Turbo',
-    icon: '🤖',
-    color: 'from-green-500 to-emerald-500'
-  },
-  {
-    id: 'deepseek',
-    name: 'DeepSeek',
-    description: 'Advanced reasoning',
-    icon: '🧠',
-    color: 'from-purple-500 to-indigo-500'
-  },
-  {
-    id: 'gemini',
-    name: 'Gemini',
-    description: 'Google\'s AI model',
-    icon: '✨',
-    color: 'from-blue-500 to-cyan-500'
-  }
-];
+interface AIModel {
+  id: string;
+  name: string;
+  description: string;
+  icon: string;
+  color: string;
+  status: string;
+}
 
 const ChatWidget: React.FC<ChatWidgetProps> = ({ 
   mode = 'both', 
@@ -66,13 +42,8 @@ const ChatWidget: React.FC<ChatWidgetProps> = ({
   const [isMinimized, setIsMinimized] = useState(false);
   const [currentStep, setCurrentStep] = useState<'welcome' | 'userInfo' | 'chatType' | 'aiConfig' | 'chat'>('welcome');
   const [chatType, setChatType] = useState<'ai' | 'admin'>('ai');
-  const [selectedAIModel, setSelectedAIModel] = useState('groq');
-  const [apiKeys, setApiKeys] = useState({
-    groq: '',
-    openai: '',
-    deepseek: '',
-    gemini: ''
-  });
+  const [selectedAIModel, setSelectedAIModel] = useState('');
+  const [availableAIModels, setAvailableAIModels] = useState<AIModel[]>([]);
   const [userInfo, setUserInfo] = useState<UserInfo>({
     name: '',
     email: '',
@@ -96,12 +67,61 @@ const ChatWidget: React.FC<ChatWidgetProps> = ({
     scrollToBottom();
   }, [messages]);
 
+  // Fetch available AI models from admin configuration
+  useEffect(() => {
+    fetchAvailableAIModels();
+  }, []);
+
+  const fetchAvailableAIModels = async () => {
+    try {
+      const apiBaseUrl = await getApiBaseUrl();
+      const response = await fetch(`${apiBaseUrl}/admin/dashboard/ai-config/enabled`);
+      const data = await response.json();
+      
+      if (data.success && data.data.aiModels.length > 0) {
+        setAvailableAIModels(data.data.aiModels);
+        // Set the first available model as default
+        setSelectedAIModel(data.data.aiModels[0].id);
+      } else {
+        // Fallback to default models if none configured
+        const defaultModels: AIModel[] = [
+          {
+            id: 'groq',
+            name: 'Groq',
+            description: 'Lightning-fast inference',
+            icon: '⚡',
+            color: 'from-orange-500 to-red-500',
+            status: 'active'
+          }
+        ];
+        setAvailableAIModels(defaultModels);
+        setSelectedAIModel('groq');
+      }
+    } catch (error) {
+      console.error('Error fetching AI models:', error);
+      // Fallback to default model
+      const defaultModels: AIModel[] = [
+        {
+          id: 'groq',
+          name: 'Groq',
+          description: 'Lightning-fast inference',
+          icon: '⚡',
+          color: 'from-orange-500 to-red-500',
+          status: 'active'
+        }
+      ];
+      setAvailableAIModels(defaultModels);
+      setSelectedAIModel('groq');
+    }
+  };
+
   const initializeChat = async () => {
     try {
       setIsLoading(true);
       setConnectionStatus('connecting');
 
-      const response = await fetch('http://localhost:50001/api/chat/initialize', {
+      const apiBaseUrl = await getApiBaseUrl();
+      const response = await fetch(`${apiBaseUrl}/chat/initialize`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
@@ -110,8 +130,7 @@ const ChatWidget: React.FC<ChatWidgetProps> = ({
           user_info: userInfo,
           chat_type: chatType,
           ai_config: chatType === 'ai' ? {
-            selected_model: selectedAIModel,
-            api_keys: apiKeys
+            selected_model: selectedAIModel
           } : undefined
         })
       });
@@ -129,7 +148,7 @@ const ChatWidget: React.FC<ChatWidgetProps> = ({
           id: Date.now().toString(),
           sender: chatType === 'ai' ? 'ai' : 'admin',
           content: chatType === 'ai' 
-            ? `Hello ${userInfo.name}! I'm your AI assistant powered by ${AI_MODELS.find(m => m.id === selectedAIModel)?.name}. How can I help you today?`
+            ? `Hello ${userInfo.name}! I'm your AI assistant powered by ${availableAIModels.find(m => m.id === selectedAIModel)?.name}. How can I help you today?`
             : data.data.admin_available 
               ? `Hello ${userInfo.name}! An admin will be with you shortly.`
               : `Hello ${userInfo.name}! All admins are currently offline. Your message will be saved and we'll get back to you soon.`,
@@ -167,7 +186,8 @@ const ChatWidget: React.FC<ChatWidgetProps> = ({
     setIsLoading(true);
 
     try {
-      const response = await fetch('http://localhost:50001/api/chat/message', {
+      const apiBaseUrl = await getApiBaseUrl();
+      const response = await fetch(`${apiBaseUrl}/chat/message`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
@@ -222,7 +242,6 @@ const ChatWidget: React.FC<ChatWidgetProps> = ({
     setMessages([]);
     setSessionId(null);
     setUserInfo({ name: '', email: '', country: '' });
-    setApiKeys({ groq: '', openai: '', deepseek: '', gemini: '' });
     setConnectionStatus('disconnected');
   };
 
@@ -301,7 +320,7 @@ const ChatWidget: React.FC<ChatWidgetProps> = ({
                          connectionStatus === 'connecting' ? 'Connecting...' : 'Disconnected'}
                       </span>
                       {chatType === 'ai' && sessionId && (
-                        <span>• {AI_MODELS.find(m => m.id === selectedAIModel)?.name}</span>
+                        <span>• {availableAIModels.find(m => m.id === selectedAIModel)?.name}</span>
                       )}
                     </div>
                   </div>
@@ -347,7 +366,7 @@ const ChatWidget: React.FC<ChatWidgetProps> = ({
                       </div>
 
                       <div className="space-y-3">
-                        {mode !== 'admin' && (
+                        {mode !== 'admin' && availableAIModels.length > 0 && (
                           <motion.button
                             whileHover={{ scale: 1.02 }}
                             whileTap={{ scale: 0.98 }}
@@ -464,7 +483,7 @@ const ChatWidget: React.FC<ChatWidgetProps> = ({
                         </button>
                         <button
                           onClick={() => {
-                            if (chatType === 'ai') {
+                            if (chatType === 'ai' && availableAIModels.length > 1) {
                               setCurrentStep('aiConfig');
                             } else {
                               initializeChat();
@@ -480,7 +499,7 @@ const ChatWidget: React.FC<ChatWidgetProps> = ({
                   </div>
                 )}
 
-                {/* AI Configuration */}
+                {/* AI Model Selection (only if multiple models available) */}
                 {currentStep === 'aiConfig' && (
                   <div className="flex-1 p-6 overflow-y-auto">
                     <div className="space-y-6">
@@ -489,7 +508,7 @@ const ChatWidget: React.FC<ChatWidgetProps> = ({
                           Choose Your AI Assistant
                         </h3>
                         <p className="text-gray-600 text-sm">
-                          Select an AI model and provide your API key
+                          Select an AI model to help you today
                         </p>
                       </div>
 
@@ -498,8 +517,8 @@ const ChatWidget: React.FC<ChatWidgetProps> = ({
                         <label className="block text-sm font-medium text-gray-700">
                           AI Model
                         </label>
-                        <div className="grid grid-cols-2 gap-3">
-                          {AI_MODELS.map((model) => (
+                        <div className="grid grid-cols-1 gap-3">
+                          {availableAIModels.map((model) => (
                             <button
                               key={model.id}
                               onClick={() => setSelectedAIModel(model.id)}
@@ -509,34 +528,18 @@ const ChatWidget: React.FC<ChatWidgetProps> = ({
                                   : 'border-gray-200 hover:border-gray-300'
                               }`}
                             >
-                              <div className="flex items-center space-x-2 mb-1">
-                                <span className="text-lg">{model.icon}</span>
-                                <span className="font-medium text-sm">{model.name}</span>
+                              <div className="flex items-center space-x-3">
+                                <div className={`w-10 h-10 rounded-lg bg-gradient-to-br ${model.color} flex items-center justify-center text-white text-lg`}>
+                                  {model.icon}
+                                </div>
+                                <div className="flex-1">
+                                  <div className="font-medium text-sm">{model.name}</div>
+                                  <p className="text-xs text-gray-600">{model.description}</p>
+                                </div>
                               </div>
-                              <p className="text-xs text-gray-600">{model.description}</p>
                             </button>
                           ))}
                         </div>
-                      </div>
-
-                      {/* API Key Input */}
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">
-                          {AI_MODELS.find(m => m.id === selectedAIModel)?.name} API Key
-                        </label>
-                        <input
-                          type="password"
-                          value={apiKeys[selectedAIModel as keyof typeof apiKeys]}
-                          onChange={(e) => setApiKeys(prev => ({ 
-                            ...prev, 
-                            [selectedAIModel]: e.target.value 
-                          }))}
-                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                          placeholder="Enter your API key"
-                        />
-                        <p className="text-xs text-gray-500 mt-1">
-                          Your API key is stored securely and only used for this chat session
-                        </p>
                       </div>
 
                       <div className="flex space-x-3">
@@ -548,7 +551,7 @@ const ChatWidget: React.FC<ChatWidgetProps> = ({
                         </button>
                         <button
                           onClick={initializeChat}
-                          disabled={!apiKeys[selectedAIModel as keyof typeof apiKeys]}
+                          disabled={!selectedAIModel}
                           className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                         >
                           Start Chat
@@ -587,17 +590,18 @@ const ChatWidget: React.FC<ChatWidgetProps> = ({
                                   )}
                                   <span className="text-xs font-medium text-gray-600">
                                     {message.sender === 'ai' 
-                                      ? `${AI_MODELS.find(m => m.id === message.ai_model)?.name || 'AI'} Assistant`
+                                      ? `${availableAIModels.find(m => m.id === message.ai_model)?.name || 'AI'} Assistant`
                                       : 'Admin'
                                     }
                                   </span>
                                 </div>
                               )}
-                              <p className={`text-sm ${
-                                message.sender === 'user' ? 'text-white' : 'text-gray-900'
-                              }`}>
-                                {message.content}
-                              </p>
+                              <div className="text-sm">
+                                <MessageFormatter 
+                                  content={message.content} 
+                                  isUser={message.sender === 'user'} 
+                                />
+                              </div>
                               <div className={`text-xs mt-1 ${
                                 message.sender === 'user' ? 'text-blue-100' : 'text-gray-500'
                               }`}>
