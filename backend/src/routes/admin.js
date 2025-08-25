@@ -201,7 +201,7 @@ router.get('/dashboard/settings', (req, res) => {
 });
 router.put('/dashboard/settings', requireFullAdmin, updateSettings);
 
-// Home Page Content Management
+// Home Page Content Management (public endpoint for frontend)
 router.get('/dashboard/home-settings', getHomeSettings);
 router.put('/dashboard/home-settings', requireEditor, updateHomeSettings);
 

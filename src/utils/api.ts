@@ -230,12 +230,31 @@ export const adminApi = {
       body: JSON.stringify({ type, settings }),
     }),
 
-  // Home Page Content Management
-  getHomeSettings: () => fetchApi<{
-    homeSettings: any;
-    availableProjects: any[];
-    featuredTestimonials: any[];
-  }>('/admin/dashboard/home-settings'),
+  // Home Page Content Management (public endpoint)
+  getHomeSettings: async () => {
+    const baseUrl = await getApiBaseUrl();
+    const response = await fetch(`${baseUrl}/admin/dashboard/home-settings`, {
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    });
+    
+    const contentType = response.headers.get('content-type');
+    let data;
+    
+    if (contentType && contentType.includes('application/json')) {
+      data = await response.json();
+    } else {
+      const text = await response.text();
+      data = { success: false, message: text || 'Invalid response format' };
+    }
+
+    if (!response.ok) {
+      throw new Error(data.message || `HTTP error! status: ${response.status}`);
+    }
+
+    return data;
+  },
   
   updateHomeSettings: (settings: any) => {
     console.log('=== API updateHomeSettings called ===');
