@@ -1,6 +1,8 @@
 import Portfolio from '../database/models/Portfolio.js';
 import { processImage } from '../utils/fileUpload.js';
+import { uploadToCloudinary, deleteFromCloudinary } from '../config/cloudinary.js';
 import path from 'path';
+import fs from 'fs';
 
 export const getAllPortfolio = async (req, res, next) => {
   try {
@@ -65,13 +67,27 @@ export const createPortfolio = async (req, res, next) => {
       status = 'published'
     } = req.body;
 
-    // Process uploaded images
+    // Upload images to Cloudinary
     const imageUrls = [];
     if (req.files && req.files.length > 0) {
-      for (const file of req.files) {
-        const outputPath = path.join('uploads/images', `portfolio_${Date.now()}_${file.filename}`);
-        await processImage(file.path, outputPath);
-        imageUrls.push(`/uploads/images/${path.basename(outputPath)}`);
+      try {
+        for (const file of req.files) {
+          const cloudinaryResult = await uploadToCloudinary(file.path, 'pixeloria/portfolio');
+          
+          if (cloudinaryResult.success) {
+            imageUrls.push(cloudinaryResult.url);
+            // Clean up temporary file
+            fs.unlinkSync(file.path);
+          } else {
+            throw new Error(`Image upload failed: ${cloudinaryResult.error}`);
+          }
+        }
+      } catch (imageError) {
+        console.error('Image upload error:', imageError);
+        return res.status(500).json({
+          success: false,
+          message: 'Failed to upload images to Cloudinary'
+        });
       }
     }
 
@@ -118,15 +134,29 @@ export const updatePortfolio = async (req, res, next) => {
       });
     }
 
-    // Process new images if uploaded
+    // Upload new images to Cloudinary if provided
     if (req.files && req.files.length > 0) {
       const imageUrls = [];
-      for (const file of req.files) {
-        const outputPath = path.join('uploads/images', `portfolio_${Date.now()}_${file.filename}`);
-        await processImage(file.path, outputPath);
-        imageUrls.push(`/uploads/images/${path.basename(outputPath)}`);
+      try {
+        for (const file of req.files) {
+          const cloudinaryResult = await uploadToCloudinary(file.path, 'pixeloria/portfolio');
+          
+          if (cloudinaryResult.success) {
+            imageUrls.push(cloudinaryResult.url);
+            // Clean up temporary file
+            fs.unlinkSync(file.path);
+          } else {
+            throw new Error(`Image upload failed: ${cloudinaryResult.error}`);
+          }
+        }
+        updates.images = [...(existingProject.images || []), ...imageUrls];
+      } catch (imageError) {
+        console.error('Image upload error:', imageError);
+        return res.status(500).json({
+          success: false,
+          message: 'Failed to upload images to Cloudinary'
+        });
       }
-      updates.images = [...(existingProject.images || []), ...imageUrls];
     }
 
     // Parse arrays from form data

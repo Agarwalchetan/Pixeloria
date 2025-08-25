@@ -1,6 +1,8 @@
 import Blog from '../database/models/Blog.js';
 import { processImage } from '../utils/fileUpload.js';
+import { uploadToCloudinary, deleteFromCloudinary } from '../config/cloudinary.js';
 import path from 'path';
+import fs from 'fs';
 
 export const getAllBlogs = async (req, res, next) => {
   try {
@@ -65,12 +67,18 @@ export const createBlog = async (req, res, next) => {
       status = 'published'
     } = req.body;
 
-    // Process uploaded image
+    // Upload image to Cloudinary
     let imageUrl = null;
     if (req.file) {
-      const outputPath = path.join('uploads/images', `blog_${Date.now()}_${req.file.filename}`);
-      await processImage(req.file.path, outputPath);
-      imageUrl = `/uploads/images/${path.basename(outputPath)}`;
+      const cloudinaryResult = await uploadToCloudinary(req.file.path, 'pixeloria/blog');
+      
+      if (cloudinaryResult.success) {
+        imageUrl = cloudinaryResult.url;
+        // Clean up temporary file
+        fs.unlinkSync(req.file.path);
+      } else {
+        throw new Error(`Image upload failed: ${cloudinaryResult.error}`);
+      }
     }
 
     // Parse tags from form data
@@ -114,11 +122,17 @@ export const updateBlog = async (req, res, next) => {
       });
     }
 
-    // Process new image if uploaded
+    // Upload new image to Cloudinary if provided
     if (req.file) {
-      const outputPath = path.join('uploads/images', `blog_${Date.now()}_${req.file.filename}`);
-      await processImage(req.file.path, outputPath);
-      updates.image_url = `/uploads/images/${path.basename(outputPath)}`;
+      const cloudinaryResult = await uploadToCloudinary(req.file.path, 'pixeloria/blog');
+      
+      if (cloudinaryResult.success) {
+        updates.image_url = cloudinaryResult.url;
+        // Clean up temporary file
+        fs.unlinkSync(req.file.path);
+      } else {
+        throw new Error(`Image upload failed: ${cloudinaryResult.error}`);
+      }
     }
 
     // Parse tags from form data

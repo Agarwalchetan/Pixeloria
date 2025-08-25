@@ -52,6 +52,15 @@ if (!mongoUri) {
   process.exit(1);
 }
 
+// Create upload directories if they don't exist
+const uploadDirs = ['uploads', 'uploads/images', 'uploads/documents', 'uploads/temp'];
+uploadDirs.forEach(dir => {
+  if (!fs.existsSync(dir)) {
+    fs.mkdirSync(dir, { recursive: true });
+    console.log(`📁 Created upload directory: ${dir}`);
+  }
+});
+
 const app = express();
 const BASE_PORT = process.env.PORT || 5000;
 
@@ -172,17 +181,27 @@ function findAvailablePort(startPort, maxAttempts = 10) {
 // Bootstrapping the server
 async function startServer() {
   try {
+    console.log('🔄 Starting server initialization...');
+    
     await connectDB();
+    console.log('✅ Database connected');
+    
     await initializeDatabase();
+    console.log('✅ Database initialized');
 
     // Find available port starting from BASE_PORT
     const availablePort = await findAvailablePort(BASE_PORT);
     
     if (availablePort !== BASE_PORT) {
+      console.log(`🔄 Port ${BASE_PORT} was occupied, shifted to port ${availablePort}`);
       logger.info(`🔄 Port ${BASE_PORT} was occupied, shifted to port ${availablePort}`);
     }
 
     const server = app.listen(availablePort, () => {
+      console.log(`🚀 Server running on http://localhost:${availablePort}`);
+      console.log(`📘 API docs available at http://localhost:${availablePort}/api-docs`);
+      console.log(`📁 Upload endpoint: http://localhost:${availablePort}/uploads`);
+      
       logger.info(`🚀 Server running on http://localhost:${availablePort}`);
       logger.info(`📘 API docs available at /api-docs`);
       
@@ -192,14 +211,17 @@ async function startServer() {
 
     // Initialize WebSocket server
     const io = initializeWebSocket(server);
+    console.log(`🔌 WebSocket server initialized for real-time chat`);
     logger.info(`🔌 WebSocket server initialized for real-time chat`);
 
     server.on('error', (error) => {
+      console.error('❌ Server error:', error);
       logger.error('❌ Server error:', error);
       process.exit(1);
     });
 
   } catch (error) {
+    console.error('❌ Failed to start server:', error);
     logger.error('❌ Failed to start server:', error);
     process.exit(1);
   }

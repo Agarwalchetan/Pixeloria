@@ -2,8 +2,11 @@ import HomeSettings from '../database/models/HomeSettings.js';
 import AboutSettings from '../database/models/AboutSettings.js';
 import Portfolio from '../database/models/Portfolio.js';
 import Testimonial from '../database/models/Testimonial.js';
-import { processImage } from '../utils/fileUpload.js';
+import { logger } from '../utils/logger.js';
 import path from 'path';
+import fs from 'fs';
+import { processImage } from '../utils/fileUpload.js';
+import { uploadToCloudinary, deleteFromCloudinary } from '../config/cloudinary.js';
 
 // HOME SETTINGS CONTROLLERS
 export const getHomeSettings = async (req, res, next) => {
@@ -264,12 +267,18 @@ export const createTeamMember = async (req, res, next) => {
   try {
     const { name, role, bio, fun_fact, skills, social, order } = req.body;
     
-    // Process uploaded image
+    // Upload image to Cloudinary
     let imageUrl = null;
     if (req.file) {
-      const outputPath = path.join('uploads/images', `team_${Date.now()}_${req.file.filename}`);
-      await processImage(req.file.path, outputPath);
-      imageUrl = `/uploads/images/${path.basename(outputPath)}`;
+      const cloudinaryResult = await uploadToCloudinary(req.file.path, 'pixeloria/team');
+      
+      if (cloudinaryResult.success) {
+        imageUrl = cloudinaryResult.url;
+        // Clean up temporary file
+        fs.unlinkSync(req.file.path);
+      } else {
+        throw new Error(`Image upload failed: ${cloudinaryResult.error}`);
+      }
     }
 
     let aboutSettings = await AboutSettings.findOne();
@@ -326,12 +335,18 @@ export const updateTeamMember = async (req, res, next) => {
       });
     }
 
-    // Process new image if uploaded
+    // Upload new image to Cloudinary if provided
     let imageUrl = aboutSettings.team_members[teamMemberIndex].image;
     if (req.file) {
-      const outputPath = path.join('uploads/images', `team_${Date.now()}_${req.file.filename}`);
-      await processImage(req.file.path, outputPath);
-      imageUrl = `/uploads/images/${path.basename(outputPath)}`;
+      const cloudinaryResult = await uploadToCloudinary(req.file.path, 'pixeloria/team');
+      
+      if (cloudinaryResult.success) {
+        imageUrl = cloudinaryResult.url;
+        // Clean up temporary file
+        fs.unlinkSync(req.file.path);
+      } else {
+        throw new Error(`Image upload failed: ${cloudinaryResult.error}`);
+      }
     }
 
     // Update team member
