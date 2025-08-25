@@ -1,9 +1,9 @@
 services:
   - type: web
-    name: pixeloria-backend
+    name: pixeloria-fullstack
     env: node
     plan: free
-    buildCommand: cd backend && npm install
+    buildCommand: npm install && npm run build && cd backend && npm install
     startCommand: cd backend && npm start
     healthCheckPath: /health
     envVars:
@@ -38,31 +38,13 @@ services:
       - key: ADMIN_PASSWORD
         sync: false
       - key: FRONTEND_URL
-        value: https://pixeloria.onrender.com
+        value: https://pixeloria-fullstack.onrender.com
       - key: RATE_LIMIT_WINDOW_MS
         value: 900000
       - key: RATE_LIMIT_MAX_REQUESTS
         value: 100
-
-  - type: web
-    name: pixeloria-frontend
-    env: static
-    plan: free
-    buildCommand: npm install && npm run build
-    staticPublishPath: ./dist
-    headers:
-      - path: /*
-        name: Cache-Control
-        value: public, max-age=0, must-revalidate
-    routes:
-      - type: rewrite
-        source: /*
-        destination: /index.html
-    envVars:
       - key: VITE_API_URL
-        value: https://pixeloria-backend.onrender.com
-      - key: VITE_ENVIRONMENT
-        value: production
+        value: https://pixeloria-fullstack.onrender.com
 
 databases:
   - name: pixeloria-db

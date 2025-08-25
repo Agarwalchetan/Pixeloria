@@ -118,6 +118,11 @@ app.use(generalLimiter);
 // Static file serving
 app.use('/uploads', express.static('uploads'));
 
+// Serve frontend static files in production
+if (process.env.NODE_ENV === 'production') {
+  app.use(express.static(path.join(__dirname, '../../dist')));
+}
+
 // Swagger documentation
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(specs));
 
@@ -143,12 +148,25 @@ app.use('/api/estimate', generalLimiter, estimateRoutes);
 app.use('/api/admin', adminLimiter, adminRoutes);
 app.use('/api/chat', chatLimiter, chatRoutes);
 
-// 404 Not Found handler
-app.use('*', (req, res) => {
-  res.status(404).json({
-    success: false,
-    message: 'Route not found',
-  });
+// SPA fallback - serve index.html for non-API routes in production
+app.get('*', (req, res) => {
+  // Skip API routes
+  if (req.path.startsWith('/api/') || req.path.startsWith('/uploads/') || req.path.startsWith('/health')) {
+    return res.status(404).json({
+      success: false,
+      message: 'Route not found',
+    });
+  }
+  
+  // Serve index.html for SPA routes in production
+  if (process.env.NODE_ENV === 'production') {
+    res.sendFile(path.join(__dirname, '../../dist/index.html'));
+  } else {
+    res.status(404).json({
+      success: false,
+      message: 'Route not found',
+    });
+  }
 });
 
 // Global error handler
