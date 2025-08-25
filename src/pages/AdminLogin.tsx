@@ -232,6 +232,8 @@ const AdminLogin: React.FC = () => {
             </motion.button>
           </form>
 
+          
+        </motion.div>
 
         {/* Back to Home */}
         <div className="text-center mt-6">
