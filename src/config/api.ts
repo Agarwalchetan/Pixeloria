@@ -1,6 +1,6 @@
 // API Configuration
 const getApiUrl = (): string => {
-  // In production, use the Railway backend URL (you'll set this in Vercel env vars)
+  // In production, use the Render backend URL
   // In development, use localhost
   return import.meta.env.VITE_API_URL || 'http://localhost:5000';
 };

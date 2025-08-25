@@ -1,13 +1,17 @@
 {
-  "name": "vite-react-typescript-starter",
+  "name": "pixeloria-fullstack",
   "private": true,
-  "version": "0.0.0",
+  "version": "1.0.0",
   "type": "module",
   "scripts": {
     "dev": "vite",
     "build": "vite build",
     "lint": "eslint .",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "backend:install": "cd backend && npm install",
+    "backend:dev": "cd backend && npm run dev",
+    "backend:start": "cd backend && npm start",
+    "install:all": "npm install && npm run backend:install"
   },
   "dependencies": {
     "@types/js-cookie": "^3.0.6",
