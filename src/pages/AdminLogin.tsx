@@ -3,6 +3,7 @@ import { motion } from 'framer-motion';
 import { Link, useNavigate } from 'react-router-dom';
 import { Code, Mail, Lock, Eye, EyeOff, Shield, ArrowRight, AlertCircle } from 'lucide-react';
 import { authUtils } from '../utils/auth';
+import { API_BASE_URL } from '../config/api';
 
 const AdminLogin: React.FC = () => {
   const [formData, setFormData] = useState({
@@ -34,7 +35,7 @@ const AdminLogin: React.FC = () => {
     setError('');
 
     try {
-      const response = await fetch('http://localhost:5000/api/auth/login', {
+      const response = await fetch(`${API_BASE_URL}/api/auth/login`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -231,18 +232,6 @@ const AdminLogin: React.FC = () => {
             </motion.button>
           </form>
 
-          {/* Demo Credentials */}
-          <div className="mt-6 p-4 bg-blue-500/10 border border-blue-500/20 rounded-lg">
-            <p className="text-blue-400 text-sm font-medium mb-2">Demo Credentials:</p>
-            <div className="space-y-1">
-              <p className="text-blue-300 text-xs">Email: admin@pixeloria.com</p>
-              <p className="text-blue-300 text-xs">Password: admin123</p>
-            </div>
-            <p className="text-blue-400 text-xs mt-2">
-              💡 Use "Remember me" for persistent login
-            </p>
-          </div>
-        </motion.div>
 
         {/* Back to Home */}
         <div className="text-center mt-6">

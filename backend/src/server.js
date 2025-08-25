@@ -64,6 +64,11 @@ uploadDirs.forEach(dir => {
 const app = express();
 const BASE_PORT = process.env.PORT || 5000;
 
+// Trust proxy when deployed (fixes rate limiting behind reverse proxy)
+if (process.env.NODE_ENV === 'production') {
+  app.set('trust proxy', 1);
+}
+
 // Swagger setup
 const swaggerOptions = {
   definition: {

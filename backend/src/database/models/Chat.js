@@ -106,7 +106,6 @@ const chatSchema = new mongoose.Schema({
 });
 
 // Index for better performance
-chatSchema.index({ session_id: 1 });
 chatSchema.index({ 'user_info.email': 1 });
 chatSchema.index({ chat_type: 1, status: 1 });
 chatSchema.index({ admin_id: 1 });
