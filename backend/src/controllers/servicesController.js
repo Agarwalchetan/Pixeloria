@@ -9,7 +9,49 @@ export const getAllServices = async (req, res, next) => {
       filter.category = category;
     }
 
-    const services = await Service.find(filter).sort({ createdAt: -1 });
+    let services = await Service.find(filter).sort({ createdAt: -1 });
+
+    // If no services exist, create sample ones
+    if (services.length === 0) {
+      console.log('No services found, creating sample services...');
+      const sampleServices = [
+        {
+          title: "Web Development",
+          description: "Custom web applications built with modern technologies",
+          category: "Development",
+          price_range: "$5,000 - $25,000",
+          duration: "4-12 weeks",
+          features: ["Responsive Design", "SEO Optimized", "Performance Focused"],
+          status: "active"
+        },
+        {
+          title: "Mobile App Development", 
+          description: "Native and cross-platform mobile applications",
+          category: "Development",
+          price_range: "$10,000 - $50,000",
+          duration: "8-16 weeks",
+          features: ["iOS & Android", "Cross-platform", "App Store Deployment"],
+          status: "active"
+        },
+        {
+          title: "UI/UX Design",
+          description: "User-centered design for digital products",
+          category: "Design",
+          price_range: "$2,000 - $10,000",
+          duration: "2-6 weeks",
+          features: ["User Research", "Wireframing", "Prototyping"],
+          status: "active"
+        }
+      ];
+      
+      try {
+        services = await Service.insertMany(sampleServices);
+        console.log('Sample services created:', services.length);
+      } catch (insertError) {
+        console.error('Error creating sample services:', insertError);
+        services = [];
+      }
+    }
 
     res.json({
       success: true,

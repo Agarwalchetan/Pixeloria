@@ -595,19 +595,22 @@ const Home: React.FC = () => {
               }
             }
 
-            const testimonialsData =
-              homeSettingsData.featured_testimonials ||
-              homeSettingsResponse.data.featuredTestimonials;
-
+            // Get testimonials from the API response - they're at the root level
+            const testimonialsData = homeSettingsResponse.data.featuredTestimonials;
+            
             if (testimonialsData && Array.isArray(testimonialsData)) {
               setFeaturedTestimonials(testimonialsData);
+              console.log('Testimonials loaded from API:', testimonialsData.length);
+            } else if (homeSettingsData.featured_testimonials && Array.isArray(homeSettingsData.featured_testimonials)) {
+              setFeaturedTestimonials(homeSettingsData.featured_testimonials);
+              console.log('Testimonials loaded from home settings:', homeSettingsData.featured_testimonials.length);
+            } else {
+              console.log('No testimonials found in API response, using fallback');
+              setFeaturedTestimonials([]);
             }
           }
         } else {
-          console.error(
-            "Home settings API error:",
-            homeSettingsResponse.error
-          );
+          console.error("Home settings API error:", homeSettingsResponse.error);
         }
       } catch (err) {
         console.error("Error fetching data:", err);

@@ -12,7 +12,9 @@ import { uploadToCloudinary, deleteFromCloudinary } from '../config/cloudinary.j
 export const getHomeSettings = async (req, res, next) => {
   try {
     console.log('Getting home settings...');
-    let homeSettings = await HomeSettings.findOne().populate('featured_case_studies.portfolio_id');
+    let homeSettings = await HomeSettings.findOne()
+      .populate('featured_case_studies.portfolio_id')
+      .populate('featured_testimonials.testimonial_id');
     
     if (!homeSettings) {
       console.log('No home settings found, creating default...');
@@ -24,7 +26,8 @@ export const getHomeSettings = async (req, res, next) => {
           users_reached: "1M+",
           support_hours: "24/7"
         },
-        featured_case_studies: []
+        featured_case_studies: [],
+        featured_testimonials: []
       });
       await homeSettings.save();
       console.log('Default home settings created:', homeSettings);
@@ -36,9 +39,69 @@ export const getHomeSettings = async (req, res, next) => {
     const portfolioProjects = await Portfolio.find({ status: 'published' }).select('title _id category');
     console.log('Portfolio projects found:', portfolioProjects.length);
     
-    // Get featured testimonials for "Voices that Trust"
-    const featuredTestimonials = await Testimonial.find({ status: 'published' }).limit(10);
-    console.log('Featured testimonials found:', featuredTestimonials.length);
+    // Get all testimonials for "Voices that Trust" selection
+    let allTestimonials = await Testimonial.find({ status: 'published' });
+    console.log('All testimonials found:', allTestimonials.length);
+    
+    // If no testimonials exist, create some sample ones
+    if (allTestimonials.length === 0) {
+      console.log('No testimonials found, creating sample testimonials...');
+      const sampleTestimonials = [
+        {
+          name: "Sarah Johnson",
+          role: "CEO",
+          company: "TechStart Inc.",
+          quote: "Pixeloria transformed our digital presence completely. The team's attention to detail exceeded our expectations.",
+          rating: 5,
+          status: "published",
+          image_url: "https://images.unsplash.com/photo-1494790108755-2616b612b786?w=150&h=150&fit=crop&crop=face"
+        },
+        {
+          name: "Michael Chen", 
+          role: "Marketing Director",
+          company: "GrowthCorp",
+          quote: "The e-commerce platform they built for us is phenomenal. Sales increased by 250% in just 3 months.",
+          rating: 5,
+          status: "published",
+          image_url: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150&h=150&fit=crop&crop=face"
+        },
+        {
+          name: "Emily Rodriguez",
+          role: "Founder", 
+          company: "Creative Studio",
+          quote: "Outstanding work! They brought our creative vision to life with pixel-perfect precision.",
+          rating: 5,
+          status: "published",
+          image_url: "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=150&h=150&fit=crop&crop=face"
+        },
+        {
+          name: "David Kim",
+          role: "CTO", 
+          company: "InnovateTech",
+          quote: "Their technical expertise and innovative solutions helped us scale our platform to millions of users.",
+          rating: 5,
+          status: "published",
+          image_url: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&h=150&fit=crop&crop=face"
+        },
+        {
+          name: "Lisa Thompson",
+          role: "Product Manager",
+          company: "StartupHub",
+          quote: "Amazing collaboration and results. They delivered exactly what we envisioned and more.",
+          rating: 5,
+          status: "published",
+          image_url: "https://images.unsplash.com/photo-1487412720507-e7ab37603c6f?w=150&h=150&fit=crop&crop=face"
+        }
+      ];
+      
+      try {
+        allTestimonials = await Testimonial.insertMany(sampleTestimonials);
+        console.log('Sample testimonials created:', allTestimonials.length);
+      } catch (insertError) {
+        console.error('Error creating sample testimonials:', insertError);
+        allTestimonials = [];
+      }
+    }
 
     console.log('Sending response with home settings...');
     res.json({
@@ -46,7 +109,7 @@ export const getHomeSettings = async (req, res, next) => {
       data: {
         homeSettings,
         availableProjects: portfolioProjects,
-        featuredTestimonials
+        featuredTestimonials: allTestimonials
       }
     });
   } catch (error) {
@@ -60,7 +123,7 @@ export const updateHomeSettings = async (req, res, next) => {
     console.log('=== Updating home settings ===');
     console.log('Request body:', req.body);
     
-    const { edge_numbers, featured_case_studies } = req.body;
+    const { edge_numbers, featured_case_studies, featured_testimonials } = req.body;
     
     let homeSettings = await HomeSettings.findOne();
     
@@ -79,6 +142,11 @@ export const updateHomeSettings = async (req, res, next) => {
       homeSettings.featured_case_studies = featured_case_studies;
     }
     
+    if (featured_testimonials) {
+      console.log('Updating featured testimonials:', featured_testimonials.length, 'items');
+      homeSettings.featured_testimonials = featured_testimonials;
+    }
+    
     homeSettings.last_updated = new Date();
     if (req.user && req.user._id) {
       homeSettings.updated_by = req.user._id;
@@ -88,7 +156,7 @@ export const updateHomeSettings = async (req, res, next) => {
     console.log('Home settings saved successfully');
     console.log('Updated edge numbers:', homeSettings.edge_numbers);
     
-    // Manually populate the featured case studies
+    // Manually populate the featured case studies and testimonials
     if (homeSettings.featured_case_studies && homeSettings.featured_case_studies.length > 0) {
       console.log('Populating featured case studies after save...');
       for (let i = 0; i < homeSettings.featured_case_studies.length; i++) {
@@ -104,6 +172,26 @@ export const updateHomeSettings = async (req, res, next) => {
             }
           } catch (populateError) {
             console.error('Error populating case study after save:', populateError);
+          }
+        }
+      }
+    }
+
+    if (homeSettings.featured_testimonials && homeSettings.featured_testimonials.length > 0) {
+      console.log('Populating featured testimonials after save...');
+      for (let i = 0; i < homeSettings.featured_testimonials.length; i++) {
+        const testimonial = homeSettings.featured_testimonials[i];
+        if (testimonial.testimonial_id) {
+          try {
+            const testimonialData = await Testimonial.findById(testimonial.testimonial_id).lean();
+            if (testimonialData) {
+              homeSettings.featured_testimonials[i] = {
+                ...testimonial,
+                testimonial_id: testimonialData
+              };
+            }
+          } catch (populateError) {
+            console.error('Error populating testimonial after save:', populateError);
           }
         }
       }

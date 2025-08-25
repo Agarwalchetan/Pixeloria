@@ -17,12 +17,29 @@ export const useHomeData = () => {
         setIsLoading(true);
         setError(null);
 
+        console.log('Fetching home data...');
+
         const [portfolioResponse, servicesResponse, homeSettingsResponse] =
           await Promise.all([
-            portfolioApi.getAll({ limit: 4 }).catch((e) => ({ success: false, error: e.message })),
-            servicesApi.getAll().catch((e) => ({ success: false, error: e.message })),
-            adminApi.getHomeSettings().catch((e) => ({ success: false, error: e.message })),
+            portfolioApi.getAll({ limit: 4 }).catch((e) => {
+              console.error('Portfolio API error:', e);
+              return { success: false, error: e.message };
+            }),
+            servicesApi.getAll().catch((e) => {
+              console.error('Services API error:', e);
+              return { success: false, error: e.message };
+            }),
+            adminApi.getHomeSettings().catch((e) => {
+              console.error('Home settings API error:', e);
+              return { success: false, error: e.message };
+            }),
           ]);
+
+        console.log('API Responses:', {
+          portfolio: portfolioResponse,
+          services: servicesResponse,
+          homeSettings: homeSettingsResponse
+        });
 
         // Process portfolio data
         if (portfolioResponse.success && portfolioResponse.data?.projects) {
@@ -40,10 +57,15 @@ export const useHomeData = () => {
         if (homeSettingsResponse.success && homeSettingsResponse.data) {
           const settings = homeSettingsResponse.data.homeSettings || homeSettingsResponse.data;
           setHomeSettings(settings);
-          if (settings.featured_testimonials) {
+          
+          // Get testimonials from the API response - they're at the root level
+          if (homeSettingsResponse.data.featuredTestimonials) {
+            setFeaturedTestimonials(homeSettingsResponse.data.featuredTestimonials);
+          } else if (settings.featured_testimonials) {
             setFeaturedTestimonials(settings.featured_testimonials);
           }
-          // Additional logic for matching featured_case_studies can be added here
+          
+          console.log('Featured testimonials set:', homeSettingsResponse.data.featuredTestimonials?.length || 0);
         }
 
       } catch (err) {

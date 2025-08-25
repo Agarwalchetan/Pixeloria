@@ -13,10 +13,52 @@ export const getAllPortfolio = async (req, res, next) => {
       filter.category = category;
     }
 
-    const projects = await Portfolio.find(filter)
+    let projects = await Portfolio.find(filter)
       .sort({ createdAt: -1 })
       .limit(parseInt(limit))
       .skip(parseInt(offset));
+
+    // If no projects exist, create sample ones
+    if (projects.length === 0) {
+      console.log('No portfolio projects found, creating sample projects...');
+      const sampleProjects = [
+        {
+          title: "E-commerce Platform",
+          description: "Modern e-commerce solution with advanced features",
+          category: "Web Development",
+          technologies: ["React", "Node.js", "MongoDB"],
+          featured_image: "https://images.pexels.com/photos/265087/pexels-photo-265087.jpeg?auto=compress&cs=tinysrgb&w=800",
+          status: "published",
+          featured: true
+        },
+        {
+          title: "Mobile Banking App",
+          description: "Secure and user-friendly mobile banking application",
+          category: "Mobile Development", 
+          technologies: ["React Native", "Firebase", "Node.js"],
+          featured_image: "https://images.pexels.com/photos/404280/pexels-photo-404280.jpeg?auto=compress&cs=tinysrgb&w=800",
+          status: "published",
+          featured: true
+        },
+        {
+          title: "Corporate Website",
+          description: "Professional corporate website with CMS",
+          category: "Web Development",
+          technologies: ["Next.js", "Tailwind CSS", "Strapi"],
+          featured_image: "https://images.pexels.com/photos/196644/pexels-photo-196644.jpeg?auto=compress&cs=tinysrgb&w=800",
+          status: "published",
+          featured: false
+        }
+      ];
+      
+      try {
+        projects = await Portfolio.insertMany(sampleProjects);
+        console.log('Sample portfolio projects created:', projects.length);
+      } catch (insertError) {
+        console.error('Error creating sample projects:', insertError);
+        projects = [];
+      }
+    }
 
     const total = await Portfolio.countDocuments(filter);
 

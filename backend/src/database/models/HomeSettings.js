@@ -33,6 +33,18 @@ const homeSettingsSchema = new mongoose.Schema({
     }
   }],
   
+  // Featured Testimonials (references to Testimonial)
+  featured_testimonials: [{
+    testimonial_id: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Testimonial'
+    },
+    order: {
+      type: Number,
+      default: 0
+    }
+  }],
+  
   // Meta settings
   last_updated: {
     type: Date,

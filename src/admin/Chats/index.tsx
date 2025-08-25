@@ -221,7 +221,7 @@ const Chats: React.FC = () => {
   const exportChatPDF = async (sessionId: string) => {
     try {
       const token = localStorage.getItem('adminToken') || sessionStorage.getItem('adminToken');
-      const response = await fetch(`http://localhost:5000/api/admin/dashboard/chats/${sessionId}/export`, {
+      const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/admin/dashboard/chats/${sessionId}/export`, {
         headers: {
           'Authorization': `Bearer ${token}`
         }
@@ -230,7 +230,7 @@ const Chats: React.FC = () => {
       if (response.ok) {
         const data = await response.json();
         if (data.success) {
-          window.open(`http://localhost:5000${data.data.pdfUrl}`, '_blank');
+          window.open(`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}${data.data.pdfUrl}`, '_blank');
         }
       }
     } catch (error) {
@@ -448,7 +448,7 @@ const Chats: React.FC = () => {
                   onClick={() => {
                     if (chat.chat_type === 'admin') {
                       // Open live chats in new tab
-                      window.open(`/admin/live-chat/${chat.session_id}`, '_blank');
+                      window.open(`/#/admin/live-chat/${chat.session_id}`, '_blank');
                     } else {
                       // Keep AI chats in modal
                       setSelectedChat(chat);
@@ -514,7 +514,7 @@ const Chats: React.FC = () => {
                         onClick={(e) => {
                           e.stopPropagation();
                           if (chat.chat_type === 'admin') {
-                            window.open(`/admin/live-chat/${chat.session_id}`, '_blank');
+                            window.open(`/#/admin/live-chat/${chat.session_id}`, '_blank');
                           } else {
                             setSelectedChat(chat);
                             setShowChatModal(true);

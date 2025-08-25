@@ -10,7 +10,6 @@ import { authUtils } from '../../utils/auth';
 const HomeContent: React.FC = () => {
   const [homeSettings, setHomeSettings] = useState<any>(null);
   const [availableProjects, setAvailableProjects] = useState<any[]>([]);
-  const [featuredTestimonials, setFeaturedTestimonials] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [activeTab, setActiveTab] = useState('numbers');
@@ -23,6 +22,8 @@ const HomeContent: React.FC = () => {
   });
 
   const [selectedCaseStudies, setSelectedCaseStudies] = useState<string[]>([]);
+  const [selectedTestimonials, setSelectedTestimonials] = useState<string[]>([]);
+  const [allTestimonials, setAllTestimonials] = useState<any[]>([]);
 
   const canEdit = authUtils.hasEditorAccess();
 
@@ -33,13 +34,19 @@ const HomeContent: React.FC = () => {
   const fetchHomeSettings = async () => {
     try {
       setIsLoading(true);
+      console.log('Fetching home settings...');
       const response = await adminApi.getHomeSettings();
+      console.log('Home settings response:', response);
       
       if (response.success && response.data) {
         const settings = response.data.homeSettings || {};
+        console.log('Home settings data:', settings);
+        console.log('Available projects:', response.data.availableProjects);
+        console.log('Featured testimonials:', response.data.featuredTestimonials);
+        
         setHomeSettings(settings);
         setAvailableProjects(response.data.availableProjects || []);
-        setFeaturedTestimonials(response.data.featuredTestimonials || []);
+        setAllTestimonials(response.data.featuredTestimonials || []);
         
         if (settings.edge_numbers) {
           setEdgeNumbers({ ...edgeNumbers, ...settings.edge_numbers });
@@ -49,7 +56,16 @@ const HomeContent: React.FC = () => {
           const caseStudyIds = settings.featured_case_studies
             .map((cs: any) => cs.portfolio_id?._id || cs.portfolio_id)
             .filter(Boolean);
+          console.log('Case study IDs:', caseStudyIds);
           setSelectedCaseStudies(caseStudyIds);
+        }
+        
+        if (settings.featured_testimonials && Array.isArray(settings.featured_testimonials)) {
+          const testimonialIds = settings.featured_testimonials
+            .map((t: any) => t.testimonial_id?._id || t.testimonial_id || t._id)
+            .filter(Boolean);
+          console.log('Featured testimonial IDs:', testimonialIds);
+          setSelectedTestimonials(testimonialIds);
         }
       } else {
         console.error('Failed to fetch home settings:', response.error);
@@ -113,6 +129,58 @@ const HomeContent: React.FC = () => {
     } finally {
       setIsSaving(false);
     }
+  };
+
+  const handleSaveTestimonials = async () => {
+    if (!canEdit) return;
+    
+    setIsSaving(true);
+    try {
+      const featured_testimonials = selectedTestimonials.map((testimonialId, index) => ({
+        testimonial_id: testimonialId,
+        order: index + 1
+      }));
+
+      const response = await adminApi.updateHomeSettings({
+        featured_testimonials
+      });
+      
+      if (response.success && response.data) {
+        setHomeSettings(response.data.homeSettings);
+        alert('Featured testimonials updated successfully!');
+      } else {
+        alert('Failed to update testimonials: ' + (response.error || 'Unknown error'));
+      }
+    } catch (error) {
+      console.error('Error updating testimonials:', error);
+      alert('An unexpected error occurred while updating testimonials.');
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const toggleTestimonial = (testimonialId: string) => {
+    if (!canEdit) return;
+    
+    setSelectedTestimonials(prev => 
+      prev.includes(testimonialId) 
+        ? prev.filter(id => id !== testimonialId)
+        : prev.length < 6 ? [...prev, testimonialId] : prev
+    );
+  };
+
+  const moveTestimonial = (testimonialId: string, direction: 'up' | 'down') => {
+    if (!canEdit) return;
+    
+    const currentIndex = selectedTestimonials.indexOf(testimonialId);
+    if (currentIndex === -1) return;
+
+    const newIndex = direction === 'up' ? currentIndex - 1 : currentIndex + 1;
+    if (newIndex < 0 || newIndex >= selectedTestimonials.length) return;
+
+    const newOrder = [...selectedTestimonials];
+    [newOrder[currentIndex], newOrder[newIndex]] = [newOrder[newIndex], newOrder[currentIndex]];
+    setSelectedTestimonials(newOrder);
   };
 
   const toggleCaseStudy = (projectId: string) => {
@@ -327,7 +395,7 @@ const HomeContent: React.FC = () => {
               <div>
                 <h3 className="font-semibold text-gray-900 mb-4">Available Projects</h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {availableProjects.map((project) => (
+                  {availableProjects.length > 0 ? availableProjects.map((project) => (
                     <motion.div
                       key={project._id}
                       onClick={() => canEdit && toggleCaseStudy(project._id)}
@@ -344,7 +412,11 @@ const HomeContent: React.FC = () => {
                       </div>
                       <p className="text-sm text-gray-600">{project.category}</p>
                     </motion.div>
-                  ))}
+                  )) : (
+                    <div className="col-span-full text-center py-8">
+                      <p className="text-gray-500">No portfolio projects available. Create some projects first to feature them here.</p>
+                    </div>
+                  )}
                 </div>
               </div>
             </motion.div>
@@ -352,29 +424,96 @@ const HomeContent: React.FC = () => {
 
           {activeTab === 'testimonials' && (
              <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-6">
-                <div className="flex items-center justify-between">
+                <div className="flex items-center justify-between mb-6">
                     <div>
                         <h2 className="text-xl font-bold text-gray-900">Featured Testimonials</h2>
-                        <p className="text-sm text-gray-600">Featured testimonials are managed from the Testimonials section.</p>
+                        <p className="text-sm text-gray-600">Select up to 6 testimonials to feature on the home page.</p>
                     </div>
-                    <a href="/admin/dashboard/testimonials" className="flex items-center space-x-2 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700">
-                        <Star size={16} />
-                        <span>Manage Testimonials</span>
-                    </a>
+                    <div className="flex space-x-3">
+                      {canEdit && (
+                        <button
+                          onClick={handleSaveTestimonials}
+                          disabled={isSaving}
+                          className="flex items-center space-x-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50"
+                        >
+                          <Save size={16} />
+                          <span>{isSaving ? 'Saving...' : 'Save Selection'}</span>
+                        </button>
+                      )}
+                      <a href="/#/admin/dashboard/testimonials" className="flex items-center space-x-2 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700">
+                          <Star size={16} />
+                          <span>Manage Testimonials</span>
+                      </a>
+                    </div>
                 </div>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {(featuredTestimonials.length > 0) ? featuredTestimonials.map((testimonial) => (
-                    <div key={testimonial._id} className="bg-gray-50 rounded-xl p-4 border">
-                      <div className="flex items-center space-x-3 mb-3">
-                        <img src={testimonial.image_url} alt={testimonial.name} className="w-10 h-10 rounded-full object-cover" />
-                        <div>
-                          <div className="font-medium text-gray-900">{testimonial.name}</div>
-                          <div className="text-sm text-gray-600">{testimonial.company}</div>
-                        </div>
-                      </div>
-                      <p className="text-sm text-gray-700 line-clamp-3">"{testimonial.quote}"</p>
+                
+                {selectedTestimonials.length > 0 && (
+                  <div className="bg-purple-50 rounded-xl p-6 mb-6">
+                    <h3 className="font-semibold text-gray-900 mb-4">Selected & Ordered ({selectedTestimonials.length}/6)</h3>
+                    <div className="space-y-3">
+                      {selectedTestimonials.map((testimonialId, index) => {
+                        const testimonial = allTestimonials.find(t => t._id === testimonialId);
+                        if (!testimonial) return null;
+                        return (
+                          <div key={testimonialId} className="flex items-center justify-between bg-white rounded-lg p-3 shadow-sm">
+                            <div className="flex items-center space-x-4">
+                              <div className="w-8 h-8 bg-purple-100 rounded-md flex items-center justify-center text-purple-600 font-bold text-sm">
+                                {index + 1}
+                              </div>
+                              <div className="flex items-center space-x-3">
+                                <img src={testimonial.image_url || '/api/placeholder/32/32'} alt={testimonial.name} className="w-8 h-8 rounded-full object-cover" />
+                                <div>
+                                  <div className="font-medium text-gray-900">{testimonial.name}</div>
+                                  <div className="text-sm text-gray-500">{testimonial.company}</div>
+                                </div>
+                              </div>
+                            </div>
+                            {canEdit && (
+                              <div className="flex items-center space-x-1">
+                                <button onClick={() => moveTestimonial(testimonialId, 'up')} disabled={index === 0} className="p-2 text-gray-400 hover:text-gray-600 disabled:opacity-30"><ArrowUp size={16} /></button>
+                                <button onClick={() => moveTestimonial(testimonialId, 'down')} disabled={index === selectedTestimonials.length - 1} className="p-2 text-gray-400 hover:text-gray-600 disabled:opacity-30"><ArrowDown size={16} /></button>
+                                <button onClick={() => toggleTestimonial(testimonialId)} className="p-2 text-gray-400 hover:text-red-600"><Trash2 size={16} /></button>
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })}
                     </div>
-                  )) : <p className="text-gray-500 col-span-full">No testimonials are currently featured.</p>}
+                  </div>
+                )}
+                
+                <div>
+                  <h3 className="font-semibold text-gray-900 mb-4">Available Testimonials</h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {allTestimonials.length > 0 ? allTestimonials.map((testimonial) => (
+                      <motion.div
+                        key={testimonial._id}
+                        onClick={() => canEdit && toggleTestimonial(testimonial._id)}
+                        whileHover={canEdit ? { scale: 1.02 } : {}}
+                        className={`border-2 rounded-xl p-4 transition-all duration-200 ${selectedTestimonials.includes(testimonial._id) ? 'border-purple-500 bg-purple-50' : 'border-gray-200 hover:border-purple-400'} ${canEdit ? 'cursor-pointer' : 'cursor-not-allowed opacity-70'}`}
+                      >
+                        <div className="flex items-center justify-between mb-2">
+                          <div className="flex items-center space-x-3">
+                            <img src={testimonial.image_url || '/api/placeholder/40/40'} alt={testimonial.name} className="w-10 h-10 rounded-full object-cover" />
+                            <div>
+                              <h4 className="font-medium text-gray-900">{testimonial.name}</h4>
+                              <p className="text-sm text-gray-600">{testimonial.company}</p>
+                            </div>
+                          </div>
+                          {selectedTestimonials.includes(testimonial._id) && (
+                            <div className="w-6 h-6 bg-purple-500 rounded-full flex items-center justify-center">
+                              <CheckCircle size={14} className="text-white" />
+                            </div>
+                          )}
+                        </div>
+                        <p className="text-sm text-gray-700 line-clamp-2">"{testimonial.quote}"</p>
+                      </motion.div>
+                    )) : (
+                      <div className="col-span-full text-center py-8">
+                        <p className="text-gray-500">No testimonials available. Create some testimonials first to feature them here.</p>
+                      </div>
+                    )}
+                  </div>
                 </div>
              </motion.div>
           )}
