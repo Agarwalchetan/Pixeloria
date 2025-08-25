@@ -21,7 +21,45 @@ import {
 import { Link } from 'react-router-dom';
 
 // Add API import for about settings
-import { adminApi } from '../utils/api';
+import { adminApi, getFileUrl } from '../utils/api';
+
+// Component to handle dynamic team member image URLs
+const TeamMemberImage: React.FC<{ imagePath: string; alt: string; className: string; onError?: (e: React.SyntheticEvent<HTMLImageElement>) => void }> = ({ imagePath, alt, className, onError }) => {
+  const [imageUrl, setImageUrl] = useState<string>('');
+
+  useEffect(() => {
+    const loadImageUrl = async () => {
+      try {
+        // Check if it's already a full URL (external image)
+        if (imagePath.startsWith('http')) {
+          setImageUrl(imagePath);
+        } else {
+          // Use dynamic URL for uploaded images
+          const url = await getFileUrl(imagePath);
+          setImageUrl(url);
+        }
+      } catch (error) {
+        console.error('Error loading team member image URL:', error);
+        // Fallback to original path
+        setImageUrl(imagePath);
+      }
+    };
+    
+    if (imagePath) {
+      loadImageUrl();
+    }
+  }, [imagePath]);
+
+  if (!imageUrl) {
+    return (
+      <div className={`${className} bg-gray-200 flex items-center justify-center`}>
+        <Users className="w-12 h-12 text-gray-400" />
+      </div>
+    );
+  }
+
+  return <img src={imageUrl} alt={alt} className={className} onError={onError} />;
+};
 
 // Type definitions
 interface TeamMember {
@@ -394,8 +432,8 @@ const About: React.FC = () => {
                   className="card group overflow-hidden"
                 >
                   <div className="relative">
-                    <img
-                      src={member.image}
+                    <TeamMemberImage
+                      imagePath={member.image}
                       alt={`${member.name} - ${member.role}`}
                       className="w-full h-64 object-cover transform group-hover:scale-110 transition-transform duration-700"
                       onError={(e) => {

@@ -1,12 +1,32 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
-  Plus, Search, Filter, Edit, Trash2, Eye, ExternalLink,
-  Image, Tag, Calendar, Globe, X, Upload
+  Plus, Search, Edit, Trash2, ExternalLink, X, Upload
 } from 'lucide-react';
-import { portfolioApi } from '../../utils/api';
+import { portfolioApi, getFileUrl } from '../../utils/api';
 
 import { authUtils } from '../../utils/auth';
+
+// Component to handle dynamic image URLs
+const ProjectImage: React.FC<{ imagePath: string; alt: string; className: string }> = ({ imagePath, alt, className }) => {
+  const [imageUrl, setImageUrl] = useState<string>('');
+
+  useEffect(() => {
+    const loadImageUrl = async () => {
+      try {
+        const url = await getFileUrl(imagePath);
+        setImageUrl(url);
+      } catch (error) {
+        console.error('Error loading image URL:', error);
+      }
+    };
+    loadImageUrl();
+  }, [imagePath]);
+
+  if (!imageUrl) return null;
+
+  return <img src={imageUrl} alt={alt} className={className} />;
+};
 
 interface Project {
   _id: string;
@@ -68,6 +88,23 @@ const Portfolio: React.FC = () => {
       const imageInput = document.getElementById('images') as HTMLInputElement;
       const images = imageInput?.files ? Array.from(imageInput.files) : undefined;
       
+      // Validate image files
+      if (images && images.length > 0) {
+        const maxSize = 5 * 1024 * 1024; // 5MB
+        const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'];
+        
+        for (const image of images) {
+          if (image.size > maxSize) {
+            alert(`Image ${image.name} is too large. Maximum size is 5MB.`);
+            return;
+          }
+          if (!allowedTypes.includes(image.type)) {
+            alert(`Image ${image.name} has invalid format. Only JPEG, PNG, GIF, and WebP are allowed.`);
+            return;
+          }
+        }
+      }
+      
       const response = editingProject 
         ? await portfolioApi.update(editingProject._id, formData, images)
         : await portfolioApi.create(formData, images);
@@ -90,9 +127,14 @@ const Portfolio: React.FC = () => {
         if (imageInput) {
           imageInput.value = '';
         }
+        
+        alert('Project saved successfully!');
+      } else {
+        alert(`Error: ${response.error || response.message || 'Failed to save project'}`);
       }
     } catch (error) {
       console.error('Error saving project:', error);
+      alert(`Error saving project: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   };
 
@@ -246,8 +288,8 @@ const Portfolio: React.FC = () => {
                   <td className="px-6 py-4">
                     <div className="flex items-center space-x-3">
                       {project.images?.[0] && (
-                        <img
-                          src={`http://localhost:5000${project.images[0]}`}
+                        <ProjectImage
+                          imagePath={project.images[0]}
                           alt={project.title}
                           className="w-12 h-12 rounded-lg object-cover"
                         />

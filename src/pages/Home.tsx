@@ -2,39 +2,28 @@ import React, { useState, useRef, useEffect } from "react";
 import Hero from "../components/Hero";
 import SectionHeader from "../components/SectionHeader";
 import {
-  Code,
   ShoppingCart,
   Laptop,
   Database,
-  Settings,
-  LineChart,
   Star,
   Zap,
-  Users,
-  Clock,
   CheckCircle,
   ArrowRight,
   Calculator,
   ExternalLink,
   Play,
   Filter,
-  Award,
-  TrendingUp,
-  Globe,
   Palette,
   Server,
-  Shield,
-  Eye,
-  Heart,
   Quote,
   ChevronLeft,
   ChevronRight,
-  Sparkles,
   Target,
   Coffee,
   Rocket,
   Brain,
   MousePointer,
+  User,
 } from "lucide-react";
 import {
   motion,
@@ -44,8 +33,46 @@ import {
   useTransform,
 } from "framer-motion";
 import { Link } from "react-router-dom";
-import { portfolioApi, servicesApi } from "../utils/api";
+import { portfolioApi, servicesApi, getFileUrl } from "../utils/api";
 import { adminApi } from "../utils/api";
+
+// Component to handle dynamic testimonial image URLs
+const TestimonialImage: React.FC<{ imagePath: string; alt: string; className: string }> = ({ imagePath, alt, className }) => {
+  const [imageUrl, setImageUrl] = useState<string>('');
+
+  useEffect(() => {
+    const loadImageUrl = async () => {
+      try {
+        // Check if it's already a full URL (external image)
+        if (imagePath.startsWith('http')) {
+          setImageUrl(imagePath);
+        } else {
+          // Use dynamic URL for uploaded images
+          const url = await getFileUrl(imagePath);
+          setImageUrl(url);
+        }
+      } catch (error) {
+        console.error('Error loading testimonial image URL:', error);
+        // Fallback to original path
+        setImageUrl(imagePath);
+      }
+    };
+    
+    if (imagePath) {
+      loadImageUrl();
+    }
+  }, [imagePath]);
+
+  if (!imageUrl) {
+    return (
+      <div className={`${className} bg-gray-200 flex items-center justify-center`}>
+        <User className="w-6 h-6 text-gray-400" />
+      </div>
+    );
+  }
+
+  return <img src={imageUrl} alt={alt} className={className} />;
+};
 
 const Home: React.FC = () => {
   // Interactive Services State
@@ -1195,8 +1222,8 @@ const Home: React.FC = () => {
                       <Quote className="absolute top-6 right-6 w-12 h-12 text-blue-200" />
                       <div className="relative z-10">
                         <div className="flex items-center mb-6">
-                          <img
-                            src={activeTestimonial.image}
+                          <TestimonialImage
+                            imagePath={activeTestimonial.image_url || activeTestimonial.image}
                             alt={activeTestimonial.name}
                             className="w-16 h-16 rounded-full object-cover mr-4 border-4 border-white shadow-lg"
                           />
@@ -1224,15 +1251,17 @@ const Home: React.FC = () => {
                           </div>
                         </div>
                         <blockquote className="text-lg text-gray-700 mb-6 leading-relaxed">
-                          "{activeTestimonial.fullQuote}"
+                          "{activeTestimonial.full_quote || activeTestimonial.fullQuote || activeTestimonial.content || activeTestimonial.quote}"
                         </blockquote>
                         <div className="flex items-center justify-between">
                           <div className="flex items-center space-x-4">
                             <span className="px-3 py-1 bg-blue-100 text-blue-800 text-sm font-medium rounded-full">
-                              {activeTestimonial.projectType}
+                              {activeTestimonial.project_type || activeTestimonial.projectType}
                             </span>
                             <span className="text-green-600 font-medium text-sm">
-                              {activeTestimonial.results}
+                              {Array.isArray(activeTestimonial.results) 
+                                ? activeTestimonial.results.join(', ') 
+                                : activeTestimonial.results}
                             </span>
                           </div>
                           <button className="text-blue-600 hover:text-blue-700 font-medium text-sm flex items-center">
@@ -1260,8 +1289,8 @@ const Home: React.FC = () => {
                           onClick={() => setCurrentTestimonial(index)}
                         >
                           <div className="flex items-center mb-3">
-                            <img
-                              src={testimonial.image}
+                            <TestimonialImage
+                              imagePath={testimonial.image_url || testimonial.image}
                               alt={testimonial.name}
                               className="w-10 h-10 rounded-full object-cover mr-3"
                             />
@@ -1274,8 +1303,8 @@ const Home: React.FC = () => {
                               </p>
                             </div>
                           </div>
-                          <p className="text-gray-700 text-sm line-clamp-2">
-                            "{testimonial.quote}"
+                          <p className="text-gray-700 text-sm">
+                            "{testimonial.content || testimonial.quote}"
                           </p>
                           <div className="flex items-center justify-between mt-3">
                             <div className="flex items-center">

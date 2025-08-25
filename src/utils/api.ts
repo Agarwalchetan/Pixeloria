@@ -65,7 +65,8 @@ export async function fetchApi<T>(
 ): Promise<ApiResponse<T>> {
   try {
     const authHeaders = getAuthHeaders();
-    const response = await fetch(`${API_BASE_URL}${endpoint}`, {
+    const baseUrl = await getApiBaseUrl(); // Use dynamic URL detection
+    const response = await fetch(`${baseUrl}${endpoint}`, {
       headers: {
         'Content-Type': 'application/json',
         ...authHeaders,
@@ -108,7 +109,8 @@ export async function fetchApiWithFormData<T>(
 ): Promise<ApiResponse<T>> {
   try {
     const authHeaders = getAuthHeaders();
-    const response = await fetch(`${API_BASE_URL}${endpoint}`, {
+    const baseUrl = await getApiBaseUrl(); // Use dynamic URL detection
+    const response = await fetch(`${baseUrl}${endpoint}`, {
       method: 'POST',
       body: formData,
       headers: {
@@ -668,6 +670,13 @@ export const calculatorApi = {
 };
 
 // Chat API functions
+export async function getFileUrl(filePath: string): Promise<string> {
+  const baseUrl = await getApiBaseUrl();
+  // Remove '/api' from base URL for file serving
+  const serverUrl = baseUrl.replace('/api', '');
+  return `${serverUrl}${filePath}`;
+}
+
 export const chatApi = {
   initialize: (userInfo: any, chatType: 'ai' | 'admin', aiConfig?: any) =>
     fetchApi<{
