@@ -1,4 +1,4 @@
-// Function to detect backend port dynamically
+// Function to detect backend port dynamically (only for development)
 async function detectBackendPort(): Promise<number> {
   // Try to read port from backend-generated file
   try {
@@ -36,23 +36,25 @@ async function detectBackendPort(): Promise<number> {
 // Cache the detected port
 let cachedPort: number | null = null;
 
-// Get API base URL with dynamic port detection
+// Get API base URL with proper environment variable support
 export async function getApiBaseUrl(): Promise<string> {
+  // Check for environment variable first (production)
+  const envApiUrl = import.meta.env.VITE_API_URL;
+  if (envApiUrl) {
+    return `${envApiUrl}/api`;
+  }
+  
+  // Fallback to dynamic port detection (development only)
   if (cachedPort === null) {
     cachedPort = await detectBackendPort();
   }
   return `http://localhost:${cachedPort}/api`;
 }
 
-// Legacy export for backward compatibility
-export const API_BASE_URL = 'http://localhost:5000/api';
-
-export interface ApiResponse<T> {
-  success: boolean;
-  message?: string;
-  data?: T;
-  error?: string;
-}
+// Legacy export for backward compatibility - use environment variable if available
+export const API_BASE_URL = import.meta.env.VITE_API_URL 
+  ? `${import.meta.env.VITE_API_URL}/api` 
+  : 'http://localhost:5000/api';
 
 // Helper function to get auth headers
 const getAuthHeaders = (): HeadersInit => {
