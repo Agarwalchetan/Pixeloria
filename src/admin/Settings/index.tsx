@@ -160,7 +160,7 @@ const Settings: React.FC = () => {
                       type="text"
                       value={generalSettings.site_title}
                       onChange={(e) => setGeneralSettings({ ...generalSettings, site_title: e.target.value })}
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
                     />
                   </div>
 
@@ -172,7 +172,7 @@ const Settings: React.FC = () => {
                       type="email"
                       value={generalSettings.contact_email}
                       onChange={(e) => setGeneralSettings({ ...generalSettings, contact_email: e.target.value })}
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
                     />
                   </div>
                 </div>
@@ -198,7 +198,7 @@ const Settings: React.FC = () => {
                       type="tel"
                       value={generalSettings.contact_phone}
                       onChange={(e) => setGeneralSettings({ ...generalSettings, contact_phone: e.target.value })}
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
                     />
                   </div>
 
@@ -210,7 +210,7 @@ const Settings: React.FC = () => {
                       type="text"
                       value={generalSettings.office_address}
                       onChange={(e) => setGeneralSettings({ ...generalSettings, office_address: e.target.value })}
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
                     />
                   </div>
                 </div>
@@ -278,7 +278,7 @@ const Settings: React.FC = () => {
                       type={showPassword ? 'text' : 'password'}
                       value={securitySettings.current_password}
                       onChange={(e) => setSecuritySettings({ ...securitySettings, current_password: e.target.value })}
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
                     />
                     <button
                       type="button"
@@ -299,7 +299,7 @@ const Settings: React.FC = () => {
                       type="password"
                       value={securitySettings.new_password}
                       onChange={(e) => setSecuritySettings({ ...securitySettings, new_password: e.target.value })}
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
                       minLength={6}
                     />
                   </div>
@@ -312,7 +312,7 @@ const Settings: React.FC = () => {
                       type="password"
                       value={securitySettings.confirm_password}
                       onChange={(e) => setSecuritySettings({ ...securitySettings, confirm_password: e.target.value })}
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
                       minLength={6}
                     />
                   </div>
@@ -327,7 +327,7 @@ const Settings: React.FC = () => {
                       type="number"
                       value={securitySettings.session_timeout}
                       onChange={(e) => setSecuritySettings({ ...securitySettings, session_timeout: parseInt(e.target.value) })}
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
                       min={1}
                       max={30}
                     />
@@ -341,7 +341,7 @@ const Settings: React.FC = () => {
                       type="number"
                       value={securitySettings.max_login_attempts}
                       onChange={(e) => setSecuritySettings({ ...securitySettings, max_login_attempts: parseInt(e.target.value) })}
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
                       min={3}
                       max={10}
                     />
@@ -377,7 +377,7 @@ const Settings: React.FC = () => {
                       type="text"
                       value={emailSettings.smtp_host}
                       onChange={(e) => setEmailSettings({ ...emailSettings, smtp_host: e.target.value })}
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
                     />
                   </div>
 
@@ -389,7 +389,7 @@ const Settings: React.FC = () => {
                       type="number"
                       value={emailSettings.smtp_port}
                       onChange={(e) => setEmailSettings({ ...emailSettings, smtp_port: parseInt(e.target.value) })}
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
                     />
                   </div>
                 </div>
@@ -403,7 +403,7 @@ const Settings: React.FC = () => {
                       type="text"
                       value={emailSettings.smtp_user}
                       onChange={(e) => setEmailSettings({ ...emailSettings, smtp_user: e.target.value })}
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
                     />
                   </div>
 
@@ -415,7 +415,7 @@ const Settings: React.FC = () => {
                       type="password"
                       value={emailSettings.smtp_password}
                       onChange={(e) => setEmailSettings({ ...emailSettings, smtp_password: e.target.value })}
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
                     />
                   </div>
                 </div>
@@ -429,7 +429,7 @@ const Settings: React.FC = () => {
                       type="email"
                       value={emailSettings.from_email}
                       onChange={(e) => setEmailSettings({ ...emailSettings, from_email: e.target.value })}
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
                     />
                   </div>
 
@@ -441,7 +441,7 @@ const Settings: React.FC = () => {
                       type="text"
                       value={emailSettings.from_name}
                       onChange={(e) => setEmailSettings({ ...emailSettings, from_name: e.target.value })}
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
                     />
                   </div>
                 </div>

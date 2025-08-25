@@ -367,7 +367,7 @@ const AIConfiguration: React.FC = () => {
                   onChange={(e) => updateModelName(model.id, e.target.value)}
                   placeholder={`Default: ${model.id === 'groq' ? 'openai/gpt-oss-20b' : model.id === 'openai' ? 'gpt-3.5-turbo' : model.id === 'deepseek' ? 'deepseek-chat' : 'gemini-pro'}`}
                   disabled={!canEdit}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-gray-50"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-gray-50 text-gray-900"
                 />
                 <p className="text-xs text-gray-500 mt-1">
                   Leave empty to use default model. For custom models, enter the exact model name.
@@ -385,7 +385,7 @@ const AIConfiguration: React.FC = () => {
                     onChange={(e) => updateApiKey(model.id, e.target.value)}
                     placeholder="Enter API key..."
                     disabled={!canEdit}
-                    className="w-full px-3 py-2 pr-20 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-gray-50"
+                    className="w-full px-3 py-2 pr-20 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-gray-50 text-gray-900"
                   />
                   <div className="absolute right-2 top-1/2 transform -translate-y-1/2 flex items-center space-x-1">
                     <button
