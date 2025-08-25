@@ -16,5 +16,10 @@ export default defineConfig({
   },
   preview: {
     port: 3000,
+    // Add SPA fallback for preview mode
+    open: true,
+    strictPort: false,
   },
+  // Add SPA fallback configuration
+  appType: 'spa',
 });
