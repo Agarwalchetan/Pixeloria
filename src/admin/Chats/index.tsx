@@ -115,7 +115,8 @@ const Chats: React.FC = () => {
   const fetchAdminStatuses = async () => {
     try {
       const token = localStorage.getItem('adminToken') || sessionStorage.getItem('adminToken');
-      const response = await fetch('http://localhost:5000/api/chat/admin/status', {
+      const apiBaseUrl = await getApiBaseUrl();
+      const response = await fetch(`${apiBaseUrl}/chat/admin/status`, {
         headers: {
           'Authorization': `Bearer ${token}`
         }
@@ -142,7 +143,8 @@ const Chats: React.FC = () => {
   const updateOnlineStatus = async (online: boolean) => {
     try {
       const token = localStorage.getItem('adminToken') || sessionStorage.getItem('adminToken');
-      const response = await fetch('http://localhost:5000/api/chat/admin/status', {
+      const apiBaseUrl = await getApiBaseUrl();
+      const response = await fetch(`${apiBaseUrl}/chat/admin/status`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -169,7 +171,8 @@ const Chats: React.FC = () => {
 
     try {
       const token = localStorage.getItem('adminToken') || sessionStorage.getItem('adminToken');
-      const response = await fetch('http://localhost:5000/api/chat/message', {
+      const apiBaseUrl = await getApiBaseUrl();
+      const response = await fetch(`${apiBaseUrl}/chat/message`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -200,7 +203,8 @@ const Chats: React.FC = () => {
   const terminateChat = async (sessionId: string, reason: string = 'Terminated by admin') => {
     try {
       const token = localStorage.getItem('adminToken') || sessionStorage.getItem('adminToken');
-      const response = await fetch(`http://localhost:5000/api/admin/dashboard/chats/${sessionId}/terminate`, {
+      const apiBaseUrl = await getApiBaseUrl();
+      const response = await fetch(`${apiBaseUrl}/admin/dashboard/chats/${sessionId}/terminate`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,

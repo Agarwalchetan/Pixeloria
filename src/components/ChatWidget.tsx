@@ -339,7 +339,8 @@ const ChatWidget: React.FC<ChatWidgetProps> = ({
     if (!sessionId) return;
     
     try {
-      const response = await fetch(`http://localhost:50001/api/chat/${sessionId}/export`, {
+      const apiBaseUrl = await getApiBaseUrl();
+      const response = await fetch(`${apiBaseUrl}/chat/${sessionId}/export`, {
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('adminToken') || sessionStorage.getItem('adminToken')}`
         }
@@ -348,7 +349,8 @@ const ChatWidget: React.FC<ChatWidgetProps> = ({
       if (response.ok) {
         const data = await response.json();
         if (data.success) {
-          window.open(`http://localhost:50001${data.data.pdfUrl}`, '_blank');
+          const serverUrl = apiBaseUrl.replace('/api', '');
+          window.open(`${serverUrl}${data.data.pdfUrl}`, '_blank');
         }
       }
     } catch (error) {
